@@ -1,0 +1,44 @@
+name: Publish signed Android releases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release/**'
+      - 'release-archive/**'
+      - 'tools/prepare_release.py'
+      - 'tools/publish_release.py'
+      - '.github/workflows/releases.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-releases
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install Android verification tools if needed
+        shell: bash
+        run: |
+          if [ ! -x "$ANDROID_HOME/build-tools/35.0.0/apksigner" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'build-tools;35.0.0'
+          fi
+      - name: Test release validation
+        shell: bash
+        run: |
+          python3 -m unittest discover -s tests -p test_release.py
+          python3 tools/prepare_release.py --verify --out release --build-tools "$ANDROID_HOME/build-tools/35.0.0"
+      - name: Publish complete releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/publish_release.py --build-tools "$ANDROID_HOME/build-tools/35.0.0" --target "$GITHUB_SHA"
