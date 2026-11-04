@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "packageName": "ru.spk.schedule",
+  "versionCode": 16,
+  "versionName": "1.11.0",
+  "minSdk": 26,
+  "sizeBytes": 157658,
+  "sha256": "9725cd592b56e8ba755be5195e4d8cb99ac3e4aa10d3ecfa1867db0e69b76b45",
+  "apkUrl": "https://github.com/MarkOfTheDevil/spk-schedule/releases/download/v1.11.0/SPK-Raspisanie-1.11.0.apk",
+  "notes": "Обновления приложения через GitHub Releases: проверка версии, скачивание APK с прогрессом и установка после подтверждения Android. Сохраняются темы, избранное, расписание, напоминания и виджеты.\n\nПереход с 1.10.0 и более старых версий: один раз скачайте APK этого выпуска и установите поверх приложения, не удаляя его. Следующие обновления будут доступны внутри приложения."
+}
