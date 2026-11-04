@@ -4,16 +4,23 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
+import time
 from prepare_release import REPOSITORY, verify_release
+
+class GitHubError(RuntimeError):
+    @property
+    def temporary(self):
+        return re.search(r'\bHTTP (?:500|502|503|504)\b', str(self)) is not None
 
 def gh(*args, optional=False):
     result = subprocess.run(['gh', *args, '--repo', REPOSITORY], capture_output=True, text=True)
     if result.returncode:
         if optional and ('release not found' in result.stderr.lower() or 'no releases found' in result.stderr.lower() or 'HTTP 404' in result.stderr):
             return None
-        raise RuntimeError(result.stderr.strip() or 'GitHub command failed.')
+        raise GitHubError(result.stderr.strip() or 'GitHub command failed.')
     return result.stdout
 
 def release_view(tag):
@@ -25,7 +32,7 @@ def published_manifest(tag):
         gh('release', 'download', tag, '--pattern', 'latest.json', '--dir', temp)
         return json.loads((Path(temp) / 'latest.json').read_text())
 
-def publish(directory, build_tools, target, latest=False):
+def publish_once(directory, build_tools, target, latest=False):
     meta, apk = verify_release(directory, build_tools)
     tag = 'v' + meta['versionName']
     existing = release_view(tag)
@@ -44,6 +51,19 @@ def publish(directory, build_tools, target, latest=False):
        str(directory / 'SHA256SUMS.txt'), '--clobber')
     gh('release', 'edit', tag, '--draft=false', '--latest=' + str(latest).lower())
     print('Published ' + tag)
+
+def publish(directory, build_tools, target, latest=False):
+    delays = (3, 8, 15)
+    for attempt in range(len(delays) + 1):
+        try:
+            return publish_once(directory, build_tools, target, latest)
+        except GitHubError as error:
+            if not error.temporary or attempt == len(delays):
+                raise
+            # Re-read release state: a failed response may follow a successful
+            # create, upload, or publish. Published assets must stay unchanged.
+            print(f'Temporary GitHub error; checking release state again in {delays[attempt]}s.', flush=True)
+            time.sleep(delays[attempt])
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

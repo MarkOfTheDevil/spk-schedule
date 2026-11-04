@@ -85,5 +85,49 @@ class ReleaseTest(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 publisher.publish(self.root / 'release', self.tools, 'abc123')
 
+    def test_lost_publish_response_does_not_reupload_published_assets(self):
+        meta = self.prepare()
+        state = {'release': None}
+        calls = []
+
+        def command(*args, **kwargs):
+            calls.append(args)
+            if args[1] == 'create':
+                state['release'] = {'isDraft': True}
+            elif args[1] == 'edit':
+                state['release'] = {'isDraft': False}
+                raise publisher.GitHubError('HTTP 500: Server Error')
+
+        with patch.object(release, 'output', self.command), patch.object(publisher, 'release_view', side_effect=lambda tag: state['release']), patch.object(publisher, 'published_manifest', return_value=meta), patch.object(publisher, 'gh', side_effect=command), patch.object(publisher.time, 'sleep') as sleep:
+            publisher.publish(self.root / 'release', self.tools, 'abc123')
+        self.assertEqual([c[1] for c in calls], ['create', 'upload', 'edit'])
+        sleep.assert_called_once()
+
+    def test_partial_draft_upload_is_resumed_after_server_error(self):
+        self.prepare()
+        state = {'release': None, 'uploads': 0}
+        calls = []
+
+        def command(*args, **kwargs):
+            calls.append(args)
+            if args[1] == 'create':
+                state['release'] = {'isDraft': True}
+            elif args[1] == 'upload':
+                state['uploads'] += 1
+                if state['uploads'] == 1:
+                    raise publisher.GitHubError('HTTP 502: Server Error')
+
+        with patch.object(release, 'output', self.command), patch.object(publisher, 'release_view', side_effect=lambda tag: state['release']), patch.object(publisher, 'gh', side_effect=command), patch.object(publisher.time, 'sleep'):
+            publisher.publish(self.root / 'release', self.tools, 'abc123')
+        self.assertEqual([c[1] for c in calls], ['create', 'upload', 'upload', 'edit'])
+
+    def test_retry_limit_and_permission_errors(self):
+        for message, attempts in [('HTTP 503: Server Error', 4), ('HTTP 403: Forbidden', 1), ('HTTP 422: Validation Failed', 1)]:
+            with self.subTest(message=message), patch.object(publisher, 'publish_once', side_effect=publisher.GitHubError(message)) as publish, patch.object(publisher.time, 'sleep') as sleep:
+                with self.assertRaises(publisher.GitHubError):
+                    publisher.publish(self.root / 'release', self.tools, 'abc123')
+                self.assertEqual(publish.call_count, attempts)
+                self.assertEqual(sleep.call_count, attempts - 1)
+
 if __name__ == '__main__':
     unittest.main()
