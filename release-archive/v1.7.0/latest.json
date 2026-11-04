@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "packageName": "ru.spk.schedule",
+  "versionCode": 11,
+  "versionName": "1.7.0",
+  "minSdk": 26,
+  "sizeBytes": 111859,
+  "sha256": "74cee2484dc304958e66e216aca4bc66080d94d26be1f01b0255bf5dc81137dc",
+  "apkUrl": "https://github.com/MarkOfTheDevil/spk-schedule/releases/download/v1.7.0/SPK-Raspisanie-1.7.0.apk",
+  "notes": "Архивная сборка 1.7.0. Оригинальный подписанный APK, предоставленный владельцем приложения.\n\nАвтоматические архивы Source code в этом выпуске относятся к репозиторию установщиков и сценариев, а не к исходникам соответствующей версии Android-приложения."
+}

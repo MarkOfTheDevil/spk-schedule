@@ -1,0 +1,2 @@
+b21dbada289d3cae3db6bf05aac84eb199a2fc67dae8bec17a351131b6068ce9  android/SPK-Raspisanie-source-1.3.0.zip
+3b45002c4e1f09dcd6b7792922895ba3a0157de218643b6c11777a3920f72180  web/spk-cloudflare-pages-archive.zip
