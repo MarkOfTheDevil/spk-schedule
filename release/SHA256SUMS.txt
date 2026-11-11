@@ -1,1 +1,1 @@
-79cd4cf62081f51065695a686c4cb1bdefc228f5e7ecffe7d11b2c5f72f1be9c  SPK-Raspisanie-1.15.0.apk
+6ba68eb2a7ea7ef2c1908338e6383156565eac2e5f10f8e518f110730afd38e2  SPK-Raspisanie-1.15.1.apk
