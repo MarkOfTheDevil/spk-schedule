@@ -1,64 +1,95 @@
-/* SPK iPhone PWA 3.0.0: responsive brand + dot-filled Cyrillic headings.
-   No external font; works offline. */
+/* SPK PWA — readable iOS-first typography, no dot-mask on text.
+   Uses the built-in SF system font; remains crisp and available offline. */
 .topbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
-  column-gap: 9px;
+  column-gap: 10px;
 }
-.topbar .brand { display: block; min-width: 0; overflow: hidden; }
+.topbar .brand {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
 .topbar .brand-title {
   display: block;
   max-width: 100%;
-  font-size: clamp(21px, 6.1vw, 29px);
-  line-height: 1.14;
-  letter-spacing: -0.035em;
-  font-weight: 850;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  font-size: clamp(19px, 5.6vw, 25px);
+  line-height: 1.13;
+  font-weight: 780;
+  letter-spacing: -.055em;
+  text-transform: none;
   white-space: normal;
   overflow-wrap: normal;
   word-break: normal;
 }
-.topbar .brand-title span { display: inline-block; margin-left: .12em; }
+.topbar .brand-title span {
+  display: inline;
+  margin-left: .12em;
+  color: var(--green);
+  font-weight: 780;
+}
 .topbar .top-actions {
   display: flex;
-  align-items: center;
   flex: 0 0 auto;
-  gap: 3px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
   position: relative;
   z-index: 1;
 }
-.topbar .top-actions .icon-button { flex: 0 0 36px; width: 36px; height: 42px; min-width: 36px; }
-.topbar .top-actions .icon-button svg { width: 21px; height: 21px; }
-@media (max-width: 350px) {
-  .topbar { column-gap: 5px; }
-  .topbar .brand-title { font-size: 21px; }
-  .topbar .top-actions .icon-button { flex-basis: 33px; width: 33px; min-width: 33px; }
+.topbar .top-actions .icon-button {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 38px;
+  min-width: 36px;
+  border-radius: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
 }
-/* Real dot texture follows Cyrillic letter shapes, rather than a font fallback.
-   Lesson names and controls retain solid readable text. */
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  :root:not([data-custom-design="on"][data-design-heading="sans"])
-    :is(.brand-title, .day-heading h2, .page-heading h1, .sheet-heading h2, .search-category),
-  :root:not([data-custom-design="on"][data-design-heading="sans"])
-    .appearance-preview-heading > span:first-child {
-    font-weight: 850;
-    background-image: radial-gradient(circle, var(--text) 1.20px, transparent 1.24px);
-    background-position: left top;
-    background-size: 3px 3px;
-    background-repeat: repeat;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: none;
-  }
-  :root:not([data-custom-design="on"][data-design-heading="sans"]) .brand-title > span {
-    -webkit-text-fill-color: inherit;
-  }
-  :root[data-custom-design="on"][data-design-heading="sans"]
-    :is(.brand-title, .day-heading h2, .page-heading h1, .sheet-heading h2, .search-category),
-  :root[data-custom-design="on"][data-design-heading="sans"]
-    .appearance-preview-heading > span:first-child {
-    background-image: none;
-    -webkit-text-fill-color: currentColor;
+.topbar .top-actions .icon-button svg {
+  width: 19px;
+  height: 19px;
+}
+/* The dotted version uses background-clip:text + transparent fill.
+   Reset both; otherwise the letters remain dotted or disappear on iOS. */
+:is(.brand-title, .day-heading h2, .page-heading h1, .sheet-heading h2,
+    .search-category, .appearance-preview-heading > span:first-child) {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif !important;
+  font-variation-settings: normal !important;
+  font-weight: 760 !important;
+  letter-spacing: -.035em !important;
+  text-transform: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  -webkit-background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none;
+}
+.topbar .brand-title {
+  font-weight: 780 !important;
+  letter-spacing: -.055em !important;
+}
+.topbar .brand-title span {
+  -webkit-text-fill-color: var(--green) !important;
+}
+.day-heading h2 {
+  font-size: clamp(21px, 5.7vw, 26px);
+  line-height: 1.15;
+}
+.page-heading h1,
+.sheet-heading h2 {
+  line-height: 1.16;
+}
+@media (max-width: 350px) {
+  .topbar { column-gap: 6px; }
+  .topbar .brand-title { font-size: 19px; }
+  .topbar .top-actions { gap: 3px; }
+  .topbar .top-actions .icon-button {
+    flex-basis: 33px;
+    width: 33px;
+    min-width: 33px;
+    height: 36px;
   }
 }
