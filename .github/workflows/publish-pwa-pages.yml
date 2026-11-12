@@ -91,6 +91,32 @@ jobs:
           assert (chr(92) + 'n  ' + polish_link) not in text
           text=text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co")
           html.write_text(text,encoding='utf-8')
+          # Remove heading-style selector: modern typography is the only supported style.
+          obsolete_heading = '<label class="field-label" for="appDesignHeading">Заголовки<select id="appDesignHeading"><option value="dot">Точечные</option><option value="sans">Обычные</option></select></label>'
+          for filename in ('index.html','404.html'):
+              page = Path('_site') / filename
+              if not page.exists():
+                  continue
+              content = page.read_text(encoding='utf-8')
+              assert content.count(obsolete_heading) == 1, filename + ': heading selector changed'
+              content = content.replace(obsolete_heading, '', 1)
+              field_wrapper = '<div class="appearance-fields"><label class="field-label" for="appDesignScale">'
+              assert field_wrapper in content
+              content = content.replace(field_wrapper, '<div class="appearance-fields appearance-text-fields"><label class="field-label" for="appDesignScale">', 1)
+              page.write_text(content, encoding='utf-8')
+          appearance = Path('_site/appearance.js')
+          appearance_src = appearance.read_text(encoding='utf-8')
+          replacements = [
+              ("$('appDesignHeading').value=draft.heading;", ''),
+              ("'appDesignHeading','appDesignCards'", "'appDesignCards'"),
+              ("appDesignHeading:'heading',", ''),
+              ("appDesignHeading:'Вид заголовка «СПК · Расписание».',", '')
+          ]
+          for old, new in replacements:
+              assert appearance_src.count(old) == 1, 'Appearance selector code changed: ' + old
+              appearance_src = appearance_src.replace(old, new, 1)
+          assert 'appDesignHeading' not in appearance_src
+          appearance.write_text(appearance_src, encoding='utf-8')
           sw=Path('_site/sw.js')
           sw_text=sw.read_text(encoding='utf-8')
           assert 'spk-iphone-v3-github-pages-3-0-0' in sw_text
@@ -99,7 +125,7 @@ jobs:
           assert "tag:'spk-reminder'," in sw_text
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
-          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-1')
+          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
           sw.write_text(sw_text,encoding='utf-8')
           PY
 
