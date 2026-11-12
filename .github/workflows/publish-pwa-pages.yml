@@ -56,6 +56,33 @@ jobs:
           sync=Path('_site/schedule-sync.js').read_text(encoding='utf-8')
           assert "'rasp_crk.xlsx':'schedule.xlsx'" in sync, 'PWA is not adapted to GitHub Pages'
           assert 'api/schedule?campus=' not in sync, 'Old Cloudflare API still configured'
+          # Integrate the verified Supabase push API without touching APK artifacts.
+          push=Path('_site/web-push.js')
+          client=push.read_text(encoding='utf-8')
+          endpoint="https://sibbvczmioxnoffnfdlj.supabase.co/functions/v1/spk-push/"
+          assert "fetch('api/push/'+name," in client
+          assert "body:payload?JSON.stringify(payload):undefined" in client
+          client=client.replace("fetch('api/push/'+name,","fetch('"+endpoint+"'+name,")
+          owner="""function getOwnerToken(){
+           const key='spk.push.owner.v1';
+           let token=localStorage.getItem(key);
+           if(!token){const bytes=crypto.getRandomValues(new Uint8Array(32));
+            token=btoa(String.fromCharCode(...bytes)).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+            localStorage.setItem(key,token);}
+           return token;
+          }
+          """
+          client=client.replace(" const b64=s=>", " "+owner+"const b64=s=>")
+          client=client.replace("body:payload?JSON.stringify(payload):undefined", "body:payload?JSON.stringify({...payload,ownerToken:getOwnerToken()}):undefined")
+          push.write_text(client,encoding='utf-8')
+          html=Path('_site/index.html')
+          text=html.read_text(encoding='utf-8')
+          assert "connect-src 'self'" in text
+          html.write_text(text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co"),encoding='utf-8')
+          sw=Path('_site/sw.js')
+          sw_text=sw.read_text(encoding='utf-8')
+          assert 'spk-iphone-v3-github-pages-3-0-0' in sw_text
+          sw.write_text(sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-1'),encoding='utf-8')
           PY
 
       - name: Download and validate current Excel files
