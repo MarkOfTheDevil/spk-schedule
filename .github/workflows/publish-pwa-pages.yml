@@ -135,7 +135,7 @@ jobs:
               assert document.count('</body>') == 1
               document = document.replace(script_src, script_src + ' https://static.cloudflareinsights.com', 1)
               document = document.replace(connect_src, connect_src + ' https://cloudflareinsights.com', 1)
-              beacon = '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\\'{"token":"'+cf_token+'"}\\'></script>'
+              beacon = '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=' + chr(39) + '{"token":"' + cf_token + '"}' + chr(39) + '></script>'
               document = document.replace('</body>', '  ' + beacon + chr(10) + '</body>', 1)
               index.write_text(document, encoding='utf-8')
               print('Cloudflare Web Analytics: beacon enabled for GitHub Pages')
