@@ -10,7 +10,7 @@
 .topbar .brand-title {
   display: block;
   max-width: 100%;
-  font-size: clamp(19px, 5.4vw, 28px);
+  font-size: clamp(21px, 6.1vw, 29px);
   line-height: 1.14;
   letter-spacing: -0.035em;
   font-weight: 850;
@@ -31,7 +31,7 @@
 .topbar .top-actions .icon-button svg { width: 21px; height: 21px; }
 @media (max-width: 350px) {
   .topbar { column-gap: 5px; }
-  .topbar .brand-title { font-size: 19px; }
+  .topbar .brand-title { font-size: 21px; }
   .topbar .top-actions .icon-button { flex-basis: 33px; width: 33px; min-width: 33px; }
 }
 /* Real dot texture follows Cyrillic letter shapes, rather than a font fallback.
@@ -42,9 +42,9 @@
   :root:not([data-custom-design="on"][data-design-heading="sans"])
     .appearance-preview-heading > span:first-child {
     font-weight: 850;
-    background-image: radial-gradient(circle, var(--text) 1.14px, transparent 1.19px);
+    background-image: radial-gradient(circle, var(--text) 1.20px, transparent 1.24px);
     background-position: left top;
-    background-size: 3.6px 3.6px;
+    background-size: 3px 3px;
     background-repeat: repeat;
     -webkit-background-clip: text;
     background-clip: text;
