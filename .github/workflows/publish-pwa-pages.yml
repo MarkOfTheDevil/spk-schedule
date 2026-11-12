@@ -82,7 +82,7 @@ jobs:
           text=html.read_text(encoding='utf-8')
           assert "connect-src 'self'" in text
           assert 'href="web.css"' in text
-          text=text.replace('href="web.css"', 'href="web.css">\n  <link rel="stylesheet" href="ui-polish.css"',1)
+          text=text.replace('<link rel="stylesheet" href="web.css">', '<link rel="stylesheet" href="web.css">\\n  <link rel="stylesheet" href="ui-polish.css">',1)
           text=text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co")
           html.write_text(text,encoding='utf-8')
           sw=Path('_site/sw.js')
