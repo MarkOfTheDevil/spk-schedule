@@ -1,10 +1,10 @@
-name: Publish SPK iPhone PWA to GitHub Pages
+name: Publish SPK iPhone PWA 3.0.0 to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
-      - "archives/web/spk-cloudflare-pages-archive.zip"
+      - "SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
       - ".github/workflows/publish-pwa-pages.yml"
   schedule:
     - cron: "37 */2 * * *"
@@ -29,88 +29,84 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare static PWA for project URL
+      - name: Prepare PWA 3.0.0
         shell: bash
         run: |
           set -euo pipefail
+          ARCHIVE="SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
+          if [ ! -f "$ARCHIVE" ]; then
+            echo "::error title=PWA archive missing::Upload $ARCHIVE to the root of main. The old Cloudflare ZIP must not be used."
+            exit 1
+          fi
           mkdir -p _site/api
-          unzip -q archives/web/spk-cloudflare-pages-archive.zip -d _site
+          unzip -q "$ARCHIVE" -d _site
           test -f _site/index.html
           test -f _site/manifest.webmanifest
           test -f _site/sw.js
           test -f _site/schedule-sync.js
-          # Cloudflare-only scripts/configs cannot execute on GitHub Pages.
-          rm -f _site/_worker.js _site/_routes.json _site/_headers
+          test -f _site/schedule-crk.json
+          test -f _site/crk-parser.js
+          test ! -f _site/_worker.js
           touch _site/.nojekyll
           python3 - <<'PY'
-          from pathlib import Path
           import json
-          sync = Path("_site/schedule-sync.js")
-          content = sync.read_text(encoding="utf-8")
-          old = "'api/schedule'"
-          assert old in content, "Web archive changed: update schedule API path manually."
-          sync.write_text(content.replace(old, "'api/schedule.xlsx'"), encoding="utf-8")
-          manifest = json.loads(Path("_site/manifest.webmanifest").read_text(encoding="utf-8"))
-          assert manifest.get("start_url") == "./" and manifest.get("scope") == "./", "Expected relative PWA paths."
-          page404 = Path("_site/404.html")
-          if page404.exists():
-              page404.write_text(page404.read_text(encoding="utf-8").replace('href="/"', 'href="./"'), encoding="utf-8")
+          from pathlib import Path
+          manifest=json.loads(Path('_site/manifest.webmanifest').read_text(encoding='utf-8'))
+          assert manifest.get('start_url') == './' and manifest.get('scope') == './', 'PWA must use relative paths'
+          sync=Path('_site/schedule-sync.js').read_text(encoding='utf-8')
+          assert "'rasp_crk.xlsx':'schedule.xlsx'" in sync, 'PWA is not adapted to GitHub Pages'
+          assert 'api/schedule?campus=' not in sync, 'Old Cloudflare API still configured'
           PY
 
-      - name: Download and validate Excel schedules
+      - name: Download and validate current Excel files
         shell: bash
         run: |
           python3 - <<'PY'
           import io
-          import os
           from pathlib import Path
           import urllib.request
           import zipfile
-
           root = Path("_site/api")
           root.mkdir(parents=True, exist_ok=True)
-          sources = {
-              "schedule.xlsx": ["rasp.xlsx"],
-              "rasp_crk.xlsx": ["rasp_crk.xlsx"],
-          }
-          for dest_name, upstream_names in sources.items():
-              upstream_name = upstream_names[0]
+          base = "https://markofthedevil.github.io/spk-schedule/api/"
+          for output_name, source in (
+              ("schedule.xlsx", "rasp.xlsx"),
+              ("rasp_crk.xlsx", "rasp_crk.xlsx"),
+          ):
               urls = [
-                  "https://www.spospk.ru/" + upstream_name,
-                  "http://www.spospk.ru/" + upstream_name,
-                  "https://markofthedevil.github.io/spk-schedule/api/" + dest_name,
+                  "https://www.spospk.ru/" + source,
+                  "http://www.spospk.ru/" + source,
+                  base + output_name,
               ]
-              ok = False
               for url in urls:
                   try:
                       request = urllib.request.Request(
-                          url, headers={"User-Agent": "Mozilla/5.0 (SPK schedule updater)", "Accept": "*/*"}
+                          url, headers={"User-Agent": "Mozilla/5.0 (SPK Schedule)", "Accept": "*/*"}
                       )
                       with urllib.request.urlopen(request, timeout=25) as response:
-                          data = response.read(8 * 1024 * 1024 + 1)
-                      if not 22 <= len(data) <= 8 * 1024 * 1024:
-                          raise ValueError("File size outside allowed range")
-                      with zipfile.ZipFile(io.BytesIO(data)) as book:
-                          if "xl/workbook.xml" not in book.namelist():
-                              raise ValueError("Not a valid XLSX workbook")
-                      (root / dest_name).write_bytes(data)
-                      print(f"OK {dest_name}: {len(data)} bytes from {url}")
-                      ok = True
+                          content = response.read(8 * 1024 * 1024 + 1)
+                      if not 22 <= len(content) <= 8 * 1024 * 1024:
+                          raise ValueError("File size is invalid")
+                      with zipfile.ZipFile(io.BytesIO(content)) as z:
+                          if "xl/workbook.xml" not in z.namelist():
+                              raise ValueError("Not an XLSX workbook")
+                      (root / output_name).write_bytes(content)
+                      print(f"Fetched {output_name}: {len(content)} bytes")
                       break
                   except Exception as exc:
-                      print(f"WARNING {dest_name}: could not fetch {url}: {exc}")
-              if not ok:
-                  print(f"WARNING: {dest_name} unavailable. PWA may use its saved snapshot.")
+                      print(f"WARNING: {url}: {exc}")
+              else:
+                  print(f"WARNING: {output_name} could not be refreshed; PWA includes cached JSON")
           PY
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload static website
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
-      - name: Deploy GitHub Pages
+      - name: Publish GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
