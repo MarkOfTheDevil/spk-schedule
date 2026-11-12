@@ -82,7 +82,13 @@ jobs:
           text=html.read_text(encoding='utf-8')
           assert "connect-src 'self'" in text
           assert 'href="web.css"' in text
-          text=text.replace('<link rel="stylesheet" href="web.css">', '<link rel="stylesheet" href="web.css">\\n  <link rel="stylesheet" href="ui-polish.css">',1)
+          style_link = '<link rel="stylesheet" href="web.css">'
+          polish_link = '<link rel="stylesheet" href="ui-polish.css">'
+          assert style_link in text
+          text = text.replace(style_link, style_link + chr(10) + '  ' + polish_link, 1)
+          assert '>РАСПИСАНИЕ <span>СПК</span>' in text
+          text = text.replace('>РАСПИСАНИЕ <span>СПК</span>', '>Расписание <span>СПК</span>', 1)
+          assert (chr(92) + 'n  ' + polish_link) not in text
           text=text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co")
           html.write_text(text,encoding='utf-8')
           sw=Path('_site/sw.js')
@@ -93,7 +99,7 @@ jobs:
           assert "tag:'spk-reminder'," in sw_text
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
-          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-3')
+          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-1')
           sw.write_text(sw_text,encoding='utf-8')
           PY
 
