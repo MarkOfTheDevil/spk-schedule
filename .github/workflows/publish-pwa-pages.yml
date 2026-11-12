@@ -89,8 +89,11 @@ jobs:
           sw_text=sw.read_text(encoding='utf-8')
           assert 'spk-iphone-v3-github-pages-3-0-0' in sw_text
           assert 'const FILES=[' in sw_text
+          # A fixed notification tag caused fresh test pushes to replace older ones silently.
+          assert "tag:'spk-reminder'," in sw_text
+          sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
-          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-2')
+          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-3')
           sw.write_text(sw_text,encoding='utf-8')
           PY
 
