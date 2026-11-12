@@ -32,6 +32,8 @@ jobs:
 
       - name: Prepare PWA 3.0.0
         shell: bash
+        env:
+          CF_WEB_ANALYTICS_TOKEN: ${{ vars.CF_WEB_ANALYTICS_TOKEN }}
         run: |
           set -euo pipefail
           ARCHIVE="SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
@@ -117,6 +119,28 @@ jobs:
               appearance_src = appearance_src.replace(old, new, 1)
           assert 'appDesignHeading' not in appearance_src
           appearance.write_text(appearance_src, encoding='utf-8')
+          # Cloudflare Web Analytics works on external hosts using the manual beacon.
+          # Token is a PUBLIC site identifier, provided via GitHub Actions repository variable.
+          import os, re, hashlib
+          cf_token = os.environ.get('CF_WEB_ANALYTICS_TOKEN', '').strip()
+          if cf_token:
+              if not re.fullmatch(r'[a-fA-F0-9]{32}', cf_token):
+                  raise ValueError('CF_WEB_ANALYTICS_TOKEN must be a 32-character hexadecimal site token')
+              index = Path('_site/index.html')
+              document = index.read_text(encoding='utf-8')
+              script_src = "script-src 'self'"
+              connect_src = "connect-src 'self'"
+              assert document.count(script_src) == 1
+              assert document.count(connect_src) == 1
+              assert document.count('</body>') == 1
+              document = document.replace(script_src, script_src + ' https://static.cloudflareinsights.com', 1)
+              document = document.replace(connect_src, connect_src + ' https://cloudflareinsights.com', 1)
+              beacon = '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\\'{"token":"'+cf_token+'"}\\'></script>'
+              document = document.replace('</body>', '  ' + beacon + chr(10) + '</body>', 1)
+              index.write_text(document, encoding='utf-8')
+              print('Cloudflare Web Analytics: beacon enabled for GitHub Pages')
+          else:
+              print('Cloudflare Web Analytics: disabled until repo variable CF_WEB_ANALYTICS_TOKEN is set')
           sw=Path('_site/sw.js')
           sw_text=sw.read_text(encoding='utf-8')
           assert 'spk-iphone-v3-github-pages-3-0-0' in sw_text
@@ -126,6 +150,8 @@ jobs:
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
+          asset_fingerprint = hashlib.sha256(Path('_site/index.html').read_bytes()).hexdigest()[:12]
+          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
           sw.write_text(sw_text,encoding='utf-8')
           PY
 
