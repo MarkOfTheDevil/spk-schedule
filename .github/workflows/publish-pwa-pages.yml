@@ -6,6 +6,7 @@ on:
     paths:
       - "SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
       - ".github/workflows/publish-pwa-pages.yml"
+      - "pages/ui-polish.css"
   schedule:
     - cron: "37 */2 * * *"
   workflow_dispatch:
@@ -40,6 +41,8 @@ jobs:
           fi
           mkdir -p _site/api
           unzip -q "$ARCHIVE" -d _site
+          # Latest responsive UI fixes live separately from the original, archived ZIP.
+          cp pages/ui-polish.css _site/ui-polish.css
           test -f _site/index.html
           test -f _site/manifest.webmanifest
           test -f _site/sw.js
@@ -78,11 +81,17 @@ jobs:
           html=Path('_site/index.html')
           text=html.read_text(encoding='utf-8')
           assert "connect-src 'self'" in text
-          html.write_text(text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co"),encoding='utf-8')
+          assert 'href="web.css"' in text
+          text=text.replace('href="web.css"', 'href="web.css">\n  <link rel="stylesheet" href="ui-polish.css"',1)
+          text=text.replace("connect-src 'self'", "connect-src 'self' https://sibbvczmioxnoffnfdlj.supabase.co")
+          html.write_text(text,encoding='utf-8')
           sw=Path('_site/sw.js')
           sw_text=sw.read_text(encoding='utf-8')
           assert 'spk-iphone-v3-github-pages-3-0-0' in sw_text
-          sw.write_text(sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-1'),encoding='utf-8')
+          assert 'const FILES=[' in sw_text
+          sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
+          sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-push-2')
+          sw.write_text(sw_text,encoding='utf-8')
           PY
 
       - name: Download and validate current Excel files
