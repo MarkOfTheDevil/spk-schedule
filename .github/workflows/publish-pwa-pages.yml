@@ -123,9 +123,13 @@ jobs:
           # Token is a PUBLIC site identifier, provided via GitHub Actions repository variable.
           import os, re, hashlib
           cf_token = os.environ.get('CF_WEB_ANALYTICS_TOKEN', '').strip()
+          if cf_token and not re.fullmatch(r'[a-fA-F0-9]{32}', cf_token):
+              # Accept the whole HTML snippet copied from Cloudflare as well as a bare token.
+              match = re.search(r'"token"\\s*:\\s*"([a-fA-F0-9]{32})"', cf_token)
+              if not match:
+                  raise ValueError('CF_WEB_ANALYTICS_TOKEN must contain a valid 32-character Cloudflare site token')
+              cf_token = match.group(1)
           if cf_token:
-              if not re.fullmatch(r'[a-fA-F0-9]{32}', cf_token):
-                  raise ValueError('CF_WEB_ANALYTICS_TOKEN must be a 32-character hexadecimal site token')
               index = Path('_site/index.html')
               document = index.read_text(encoding='utf-8')
               script_src = "script-src 'self'"
