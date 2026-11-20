@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict'),a=require('./teacher-tools.js');
+const d=s=>new Date(s+'T12:00:00');
+assert.equal(a.dayOff(d('2026-11-21')),'');
+assert.equal(a.dayOff(d('2026-11-22')),'Воскресенье');
+assert.equal(a.dayOff(d('2026-12-31')),'Перенос выходного');
+assert.equal(a.dayOff(d('2027-01-09')),'');
+assert.equal(a.dayOff(d('2027-02-22')),'');
+assert.equal(a.dayOff(d('2027-05-10')),'Перенос выходного');
+assert.equal(a.dayOff(d('2027-11-05')),'');
+const lesson=(number,start,end,room,subgroup=0)=>({number,start,end,variants:[{room,subgroup}]});
+const data={groups:[{source:'spk',weeks:{even:{0:[lesson(1,'08:30','10:05','101',2),lesson(2,'09:50','11:25','102')]},odd:{0:[lesson(1,'08:30','10:05','103'),lesson(2,'10:25','12:00','онлайн')]}}},{source:'crk',weeks:{even:{0:[lesson(1,'08:30','10:05','101')]},odd:{}}}],unassignedEntries:[{week:'even',day:0,number:2,time:'09:45-11:20',room:'309/1'},{week:'odd',day:0,number:2,time:'10:25-12:00',room:'307'}]};
+let m=a.model(data,'spk','even',0),r=a.availability(m,m.slots[0]);
+assert.deepEqual(r.busy,['101','102']);assert.deepEqual(r.free,['103']);
+m=a.model(data,'spk','odd',0);r=a.availability(m,m.slots[0]);assert.deepEqual(r.busy,['103']);assert.deepEqual(r.free,['101','102']);
+m=a.model(data,'crk','even',0);r=a.availability(m,m.slots[0]);assert.deepEqual(r.busy,['101','309/1']);assert.deepEqual(r.free,['307']);
+assert.equal(a.roomName('СЗ/1'),'');assert.equal(a.roomName('ЦРК'),'');assert.equal(a.roomName('309/1'),'309/1');
+console.log('Teacher tools tests passed: overlap, subgroup, parity, separate campuses, unassigned CRK, six-day calendar.');

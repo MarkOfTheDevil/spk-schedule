@@ -7,6 +7,9 @@ on:
       - "SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
       - ".github/workflows/publish-pwa-pages.yml"
       - "pages/ui-polish.css"
+      - "pages/teacher-tools.js"
+      - "pages/teacher-tools.css"
+      - "pages/teacher-tools.test.js"
   schedule:
     - cron: "37 */2 * * *"
   workflow_dispatch:
@@ -45,6 +48,7 @@ jobs:
           unzip -q "$ARCHIVE" -d _site
           # Latest responsive UI fixes live separately from the original, archived ZIP.
           cp pages/ui-polish.css _site/ui-polish.css
+          cp pages/teacher-tools.js pages/teacher-tools.css _site/
           test -f _site/index.html
           test -f _site/manifest.webmanifest
           test -f _site/sw.js
@@ -119,6 +123,20 @@ jobs:
               appearance_src = appearance_src.replace(old, new, 1)
           assert 'appDesignHeading' not in appearance_src
           appearance.write_text(appearance_src, encoding='utf-8')
+          for filename in ('index.html','404.html'):
+              page = Path('_site') / filename
+              if not page.exists():
+                  continue
+              doc = page.read_text(encoding='utf-8')
+              script = '<script src="app.js" defer></script>'
+              style = '<link rel="stylesheet" href="web.css">'
+              assert doc.count(script) == 1 and doc.count(style) == 1
+              doc = doc.replace(script, script + chr(10) + '  <script src="teacher-tools.js" defer></script>', 1)
+              doc = doc.replace(style, style + chr(10) + '  <link rel="stylesheet" href="teacher-tools.css">', 1)
+              page.write_text(doc, encoding='utf-8')
+          for filename in ('app.js','updates.js'):
+              p = Path('_site') / filename
+              p.write_text(p.read_text(encoding='utf-8').replace('3.0.0','3.1.0'), encoding='utf-8')
           # Cloudflare Web Analytics works on external hosts using the manual beacon.
           # Token is a PUBLIC site identifier, provided via GitHub Actions repository variable.
           import os, re, hashlib
@@ -152,12 +170,22 @@ jobs:
           # A fixed notification tag caused fresh test pushes to replace older ones silently.
           assert "tag:'spk-reminder'," in sw_text
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
-          sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css',",1)
+          sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
           asset_fingerprint = hashlib.sha256(Path('_site/index.html').read_bytes()).hexdigest()[:12]
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
+          sw_text=sw_text.replace('modern-type-no-heading-1-', 'teacher-tools-3-1-0-')
           sw.write_text(sw_text,encoding='utf-8')
           PY
+
+      - name: Test teacher tools and JavaScript
+        shell: bash
+        run: |
+          node --check _site/teacher-tools.js
+          node --check _site/app.js
+          node --check _site/sw.js
+          node pages/teacher-tools.test.js
+          node -e "const t=require('./pages/teacher-tools.js'); const a=require('./_site/schedule.json'); const b=require('./_site/schedule-crk.json'); const d={groups:[...a.groups,...b.groups],unassignedEntries:b.unassignedEntries}; for (const c of ['spk','crk']) for(const w of ['even','odd']) for(let i=0;i<6;i++){const m=t.model(d,c,w,i);if(!m.rooms.length)throw Error('Missing rooms '+c);for(const s of m.slots){const r=t.availability(m,s);if(r.free.length+r.busy.length+r.unknown.length!==m.rooms.length)throw Error('Room partition invalid');}} console.log('Both bundled schedule sources checked')"
 
       - name: Download and validate current Excel files
         shell: bash
