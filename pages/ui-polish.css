@@ -96,8 +96,8 @@
 
 /* Theme-aware SPK signature. Keep accessible text in the original brand block. */
 .topbar .brand{display:flex;align-items:center;min-width:0;max-width:100%;position:relative}
-.topbar .brand>.spk-brand-logo{display:block;width:min(100%,174px);height:auto;flex:0 1 174px;background:none;border:0;border-radius:0;box-shadow:none;margin:0;padding:0;overflow:visible;color:var(--text)}
-.topbar .brand>.spk-brand-logo .spk-brand-mark{display:block;width:100%;height:auto;max-height:79px;overflow:visible;stroke:none;fill:none}
+.topbar .brand>.spk-brand-logo{display:block;width:min(100%,116px);height:auto;flex:0 1 116px;background:none;border:0;border-radius:0;box-shadow:none;margin:0;padding:0;overflow:visible;color:var(--text)}
+.topbar .brand>.spk-brand-logo .spk-brand-mark{display:block;width:100%;height:auto;max-height:56px;overflow:visible;stroke:none;fill:none}
 .topbar .brand>.spk-brand-logo+div{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .spk-brand-mark .spk-logo-color-a{stop-color:var(--green,#087f70)}
 .spk-brand-mark .spk-logo-color-b{stop-color:var(--limeStart,var(--lime,#79e9bb))}
@@ -118,4 +118,4 @@
 .spk-brand-mark .spk-logo-calendar-dots{fill:var(--text);stroke:none}
 :root:not([data-motion="off"]) .spk-brand-mark :is(path,circle,text,rect,stop){transition:fill .38s ease,stroke .38s ease,stop-color .38s ease}
 @media(prefers-reduced-motion:reduce){.spk-brand-mark *{transition:none!important}}
-@media(max-width:350px){.topbar .brand>.spk-brand-logo{flex-basis:154px}.topbar .brand>.spk-brand-logo .spk-brand-mark{max-height:72px}}
+@media(max-width:350px){.topbar .brand>.spk-brand-logo{flex-basis:104px}.topbar .brand>.spk-brand-logo .spk-brand-mark{max-height:50px}}
