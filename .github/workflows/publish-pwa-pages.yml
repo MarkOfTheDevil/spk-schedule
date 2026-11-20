@@ -7,6 +7,7 @@ on:
       - "SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip"
       - ".github/workflows/publish-pwa-pages.yml"
       - "pages/ui-polish.css"
+      - "pages/spk-brand.svg"
       - "pages/teacher-tools.js"
       - "pages/teacher-tools.css"
       - "pages/teacher-tools.test.js"
@@ -135,6 +136,13 @@ jobs:
               assert doc.count(script) == 1 and doc.count(style) == 1
               doc = doc.replace(script, script + chr(10) + '  <script src="teacher-tools.js" defer></script>', 1)
               doc = doc.replace(style, style + chr(10) + '  <link rel="stylesheet" href="teacher-tools.css">', 1)
+              # Inline SVG inherits the active palette, including custom design tokens.
+              from xml.etree import ElementTree
+              logo = Path('pages/spk-brand.svg').read_text(encoding='utf-8').strip()
+              assert ElementTree.fromstring(logo).tag.endswith('svg')
+              import re
+              doc, count = re.subn(r'<div class="brand-icon" aria-hidden="true"><svg[^>]*>.*?</svg></div>', lambda _: '<div class="brand-icon spk-brand-logo" aria-hidden="true">'+logo+'</div>', doc, count=1, flags=re.S)
+              assert count == 1, filename + ': brand icon anchor not found'
               page.write_text(doc, encoding='utf-8')
           for filename in ('app.js','updates.js'):
               p = Path('_site') / filename

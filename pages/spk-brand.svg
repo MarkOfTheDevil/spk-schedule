@@ -1,0 +1,25 @@
+<svg class="spk-brand-mark" viewBox="0 0 240 116" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="spkBrandRibbon" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" class="spk-logo-color-a"/><stop offset=".48" class="spk-logo-color-b"/><stop offset="1" class="spk-logo-color-c"/>
+    </linearGradient>
+    <linearGradient id="spkBrandDisc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" class="spk-logo-disc-a"/><stop offset="1" class="spk-logo-disc-b"/>
+    </linearGradient>
+  </defs>
+  <path class="spk-logo-orbit-back" d="M23 91C-12 68 81 27 164 30C216 32 231 47 199 67"/>
+  <circle class="spk-logo-disc" cx="68" cy="56" r="49"/>
+  <path class="spk-logo-ribbon-dark" d="M31 30Q31 27 35 25L62 11L82 24L31 50Z"/>
+  <path class="spk-logo-fold" d="M31 50L46 47L92 70L81 77Z"/>
+  <path class="spk-logo-ribbon-dark" d="M31 83L65 65L88 80L31 108Z"/>
+  <path class="spk-logo-arrow-outline" d="M29 61L131 9L119 4L182 1L140 52L142 36L29 84Z"/>
+  <path class="spk-logo-arrow" d="M33 63L140 8L130 5L175 3L144 42L145 29L33 79Z"/>
+  <path class="spk-logo-orbit" d="M24 87C-12 108 58 123 133 105C172 96 207 81 219 67"/>
+  <text class="spk-logo-word" x="96" y="77">СПК</text>
+  <text class="spk-logo-caption" x="121" y="97">Расписание</text>
+  <g class="spk-logo-calendar" transform="translate(83 78) rotate(7 16 16)">
+    <rect class="spk-logo-calendar-bg" x="1" y="4" width="32" height="31" rx="5"/>
+    <path class="spk-logo-calendar-rule" d="M2 13H32M9 1V9M25 1V9"/>
+    <path class="spk-logo-calendar-dots" d="M8 19h4v4H8zM16 19h4v4h-4zM24 19h4v4h-4zM8 27h4v4H8zM16 27h4v4h-4zM24 27h4v4h-4z"/>
+  </g>
+</svg>

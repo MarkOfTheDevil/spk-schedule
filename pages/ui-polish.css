@@ -93,3 +93,29 @@
     height: 36px;
   }
 }
+
+/* Theme-aware SPK signature. Keep accessible text in the original brand block. */
+.topbar .brand{display:flex;align-items:center;min-width:0;max-width:100%;position:relative}
+.topbar .brand>.spk-brand-logo{display:block;width:min(100%,174px);height:auto;flex:0 1 174px;background:none;border:0;border-radius:0;box-shadow:none;margin:0;padding:0;overflow:visible;color:var(--text)}
+.topbar .brand>.spk-brand-logo .spk-brand-mark{display:block;width:100%;height:auto;max-height:79px;overflow:visible;stroke:none;fill:none}
+.topbar .brand>.spk-brand-logo+div{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.spk-brand-mark .spk-logo-color-a{stop-color:var(--green,#087f70)}
+.spk-brand-mark .spk-logo-color-b{stop-color:var(--limeStart,var(--lime,#79e9bb))}
+.spk-brand-mark .spk-logo-color-c{stop-color:var(--limeEnd,var(--green,#087f70))}
+.spk-brand-mark .spk-logo-disc-a{stop-color:var(--panel,#fff)}
+.spk-brand-mark .spk-logo-disc-b{stop-color:var(--panel2,#edf2f4)}
+.spk-brand-mark .spk-logo-disc{fill:url(#spkBrandDisc);stroke:var(--green);stroke-width:2.2}
+.spk-brand-mark .spk-logo-orbit-back{fill:none;stroke:var(--green);stroke-width:2;opacity:.55}
+.spk-brand-mark .spk-logo-ribbon-dark{fill:var(--green);stroke:none}
+.spk-brand-mark .spk-logo-fold{fill:var(--text);stroke:none;opacity:.24}
+.spk-brand-mark .spk-logo-arrow-outline{fill:var(--panel);stroke:var(--green);stroke-width:1.2;stroke-linejoin:round}
+.spk-brand-mark .spk-logo-arrow{fill:url(#spkBrandRibbon);stroke:none}
+.spk-brand-mark .spk-logo-orbit{fill:none;stroke:url(#spkBrandRibbon);stroke-width:4.2;stroke-linecap:round}
+.spk-brand-mark .spk-logo-word{fill:var(--text);stroke:var(--panel);paint-order:stroke fill;stroke-width:4.2;stroke-linejoin:round;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-weight:900;font-style:italic;font-size:55px;letter-spacing:-3px}
+.spk-brand-mark .spk-logo-caption{fill:var(--text);stroke:var(--bg);paint-order:stroke fill;stroke-width:2.8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:16px;font-weight:700;font-style:italic;letter-spacing:-.45px}
+.spk-brand-mark .spk-logo-calendar-bg{fill:var(--panel);stroke:var(--green);stroke-width:2.4}
+.spk-brand-mark .spk-logo-calendar-rule{fill:none;stroke:var(--green);stroke-width:2.6;stroke-linecap:round}
+.spk-brand-mark .spk-logo-calendar-dots{fill:var(--text);stroke:none}
+:root:not([data-motion="off"]) .spk-brand-mark :is(path,circle,text,rect,stop){transition:fill .38s ease,stroke .38s ease,stop-color .38s ease}
+@media(prefers-reduced-motion:reduce){.spk-brand-mark *{transition:none!important}}
+@media(max-width:350px){.topbar .brand>.spk-brand-logo{flex-basis:154px}.topbar .brand>.spk-brand-logo .spk-brand-mark{max-height:72px}}
