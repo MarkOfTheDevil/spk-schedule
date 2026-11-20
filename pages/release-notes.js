@@ -13,10 +13,6 @@ const notes=[
 function list(){
  return '<ul class="spk-release-list">'+notes.map(([name,title,description])=>'<li><span class="spk-release-icon" aria-hidden="true">'+icon(name)+'</span><div><strong>'+title+'</strong><small>'+description+'</small></div></li>').join('')+'</ul>';
 }
-const previousAbout=renderAbout;
-renderAbout=function(){
- return aboutFeature('calendar','Что нового · '+version,list())+previousAbout();
-};
 let seen=false;
 try{seen=localStorage.getItem(key)==='1';}catch(_){}
 if(seen)return;
@@ -37,7 +33,7 @@ function open(){
  const button=dialog.querySelector('.spk-release-dismiss');
  button.addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{acknowledge();dialog.remove();document.removeEventListener('visibilitychange',open);});
- try{dialog.showModal();opened=true;stopWatching();}catch(_){dialog.remove();}
+ try{dialog.showModal();opened=true;acknowledge();stopWatching();}catch(_){dialog.remove();}
 }
 function start(){
  if(seen||opened)return;
