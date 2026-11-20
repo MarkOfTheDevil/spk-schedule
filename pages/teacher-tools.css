@@ -10,8 +10,10 @@
 .spk-room-entry small{font-size:11px;color:var(--muted);margin-top:3px}
 .spk-fav-teachers{margin:24px 0 18px}.spk-fav-teachers h2{font-size:19px;margin:0 0 12px}
 .spk-day-off{color:#e45151!important}.spk-day-off.active,.spk-day-off.selected{color:var(--onLime)!important;box-shadow:inset 0 -3px #e45151}
-.spk-day-off-note{border:1px solid var(--line);border-left:3px solid #e45151;background:var(--panel);border-radius:10px;padding:12px;margin:10px 0;display:grid;gap:5px;font-size:12px}
-.spk-day-off-note strong{font-size:14px}.spk-day-off-note span{line-height:1.5;color:var(--muted)}
+.spk-day-off-label{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;margin:8px 0 12px;padding:0 2px;line-height:1.4;font-size:12px}
+.spk-off-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#e45151}
+.spk-day-off-label strong{font-size:13px;font-weight:650;color:var(--text)}
+.spk-day-off-label small{font-size:11px;color:var(--muted);line-height:1.4}
 .spk-calendar-legend{font-size:11px;color:var(--muted);margin:8px 0}.spk-calendar-legend span{color:#e45151}
 .spk-room-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:4px 0 10px}
 .spk-room-filters label{display:grid;gap:5px;font-size:12px;color:var(--muted);min-width:0}

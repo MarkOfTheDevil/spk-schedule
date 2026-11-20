@@ -172,7 +172,7 @@ jobs:
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
-          asset_fingerprint = hashlib.sha256(Path('_site/index.html').read_bytes()).hexdigest()[:12]
+          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css'))).hexdigest()[:12]
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
           sw_text=sw_text.replace('modern-type-no-heading-1-', 'teacher-tools-3-1-0-')
           sw.write_text(sw_text,encoding='utf-8')

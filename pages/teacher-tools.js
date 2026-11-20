@@ -106,14 +106,14 @@ renderDayControls=function(){
 const oldDayHeading=renderDayHeading;
 renderDayHeading=function(count){
  const off=dayOff(selectedDate());
- return oldDayHeading(count)+(off?'<aside class="spk-day-off-note"><strong>'+esc(off)+'</strong><span>Выходной по календарю шестидневки. Ниже — шаблон расписания; уточняйте занятия по объявлениям колледжа.</span></aside>':'');
+ return oldDayHeading(count)+(off?'<div class="spk-day-off-label"><span class="spk-off-dot" aria-hidden="true"></span><strong>'+esc(off==='Воскресенье'?'Выходной день':off)+'</strong>'+(count>0?'<small>Расписание может отличаться</small>':'')+'</div>':'');
 };
 const oldCalendar=calendarHtml;
 calendarHtml=function(){
  return oldCalendar().replace(/<button [^>]*data-calendar-date="(\d{4}-\d{2}-\d{2})"[^>]*>/g,(tag,date)=>{
   const d=SpkPlanner.date(date),off=d&&dayOff(d);if(!off)return tag;
   return tag.replace('class="calendar-day ','class="calendar-day spk-day-off ').replace(/aria-label="([^"]*)"/,(_,label)=>'aria-label="'+label+', '+esc(off)+'"').replace(/>$/,' title="'+esc(off)+'">');
- }).replace('<div class="calendar-legend">','<p class="spk-calendar-legend"><span>●</span> Выходные и праздники по шестидневке</p><div class="calendar-legend">');
+ }).replace('<div class="calendar-legend">','<p class="spk-calendar-legend"><span>●</span> Выходные и праздники</p><div class="calendar-legend">');
 };
 let roomCampus='spk',roomDate='',roomSlot='';
 function drawRooms(){
@@ -123,7 +123,7 @@ function drawRooms(){
  if(!m.slots.some(s=>s.key===roomSlot))roomSlot=m.slots[0]?.key||'';
  const slot=m.slots.find(s=>s.key===roomSlot),a=availability(m,slot);
  const tiles=arr=>'<div class="spk-room-grid">'+arr.map(r=>'<span>'+esc(r)+'</span>').join('')+'</div>';
- const result=!d?'<p class="planner-note">Выберите корректную дату.</p>':off?'<aside class="spk-day-off-note"><strong>'+esc(off)+'</strong><span>Работа колледжа в этот день не подтверждена. Кабинеты не отмечаются свободными.</span></aside>':!slot?'<p class="planner-note">На дату нет известных интервалов пар. Свободные кабинеты определить нельзя.</p>':!m.rooms.length?'<p class="planner-note">В выбранном источнике нет известных кабинетов.</p>':
+ const result=!d?'<p class="planner-note">Выберите корректную дату.</p>':off?'<div class="spk-day-off-label"><span class="spk-off-dot" aria-hidden="true"></span><strong>'+esc(off==='Воскресенье'?'Выходной день':off)+'</strong><small>Доступность кабинетов не определена</small></div>':!slot?'<p class="planner-note">На дату нет известных интервалов пар. Свободные кабинеты определить нельзя.</p>':!m.rooms.length?'<p class="planner-note">В выбранном источнике нет известных кабинетов.</p>':
  '<div class="spk-room-summary"><strong>'+a.free.length+'</strong><span>Без занятий по таблице</span></div>'+(a.free.length?tiles(a.free):'<p class="planner-note">Свободных по таблице кабинетов не найдено.</p>')+'<details class="spk-room-details"><summary>Занятые по таблице · '+a.busy.length+'</summary>'+tiles(a.busy)+'</details>'+(a.unknown.length?'<details class="spk-room-details"><summary>Неопределённое время · '+a.unknown.length+'</summary>'+tiles(a.unknown)+'</details>':'');
  $('plannerContent').innerHTML='<div class="spk-room-filters"><label>Источник<select id="spkRoomCampus"><option value="spk" '+(roomCampus==='spk'?'selected':'')+'>СПК</option><option value="crk" '+(roomCampus==='crk'?'selected':'')+'>ЦРК</option></select></label><label>Дата<input type="date" id="spkRoomDate" value="'+esc(roomDate)+'"></label><label class="spk-room-time">Время пары<select id="spkRoomSlot" '+(!m.slots.length?'disabled':'')+'>'+m.slots.map(s=>'<option value="'+esc(s.key)+'" '+(s.key===roomSlot?'selected':'')+'>'+esc(s.numbers.sort((x,y)=>x-y).join('/')+' пара · '+s.start+'–'+s.end)+'</option>').join('')+'</select></label></div><p class="planner-note">'+(week==='even'?'Чётная':'Нечётная')+' неделя · все группы и подгруппы</p>'+result+'<p class="planner-note">Только кабинеты, встречавшиеся в текущем расписании. Дополнительные брони, замены и помещения вне таблицы не учитываются. '+(meta?.error?'Источник недоступен, используется сохранённая копия. ':!meta?'Нет подтверждения актуальности источника. ':'')+(meta?.fetchedAt?'Таблица: '+esc(timestamp(meta.fetchedAt))+'.':'')+'</p>';
 }
