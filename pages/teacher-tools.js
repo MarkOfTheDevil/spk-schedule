@@ -88,6 +88,10 @@ renderSmartSearch=function(){
   b.parentElement.insertAdjacentHTML('beforeend',star(t.campus,TeacherIndex.key(t.label),t.label));
  });
 };
+const oldAbout=renderAbout;
+renderAbout=function(){
+ return oldAbout()+aboutFeature('room','Свободные кабинеты','<p>Откройте раздел «Преподаватели» и выберите «Свободные кабинеты». Укажите дату, время пары, источник расписания и корпус.</p><p>Кабинеты разделены на первый корпус, мастерскую и второй корпус. Занятость определяется по расписанию всех групп и подгрупп; отдельные бронирования и замены вне таблицы не учитываются.</p>');
+};
 const oldFav=renderFavorites;
 renderFavorites=function(){
  const add=(title,attr)=>'<button type="button" class="spk-fav-add" '+attr+' aria-label="'+esc(title)+'"><span aria-hidden="true">+</span><span>Добавить</span></button>';
