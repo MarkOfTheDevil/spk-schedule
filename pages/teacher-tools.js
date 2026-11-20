@@ -15,7 +15,11 @@ function dayOff(d){
 function minute(s){const m=/^(\d{1,2}):(\d{2})$/.exec(String(s||''));if(!m||+m[1]>23||+m[2]>59)return null;return +m[1]*60 + +m[2];}
 function interval(start,end){const a=minute(start),b=minute(end);return a!==null&&b!==null&&b>a?[a,b]:null;}
 function overlap(a,b){return a[0]<b[1]&&b[0]<a[1];}
-function roomName(x){const v=String(x||'').trim().toUpperCase().replace(/\s/g,'');return /^\d{2,4}(?:\/[0-9А-ЯA-Z]{1,5})?$/.test(v)?v:'';}
+function roomName(x){const v=String(x||'').trim().toUpperCase().replace(/\s/g,'').replace(/\/[MМ]$/,'/м');return /^\d{2,4}(?:\/[0-9А-ЯA-Zм]{1,5})?$/.test(v)?v:'';}
+const roomBuildings=[['first','Первый корпус'],['workshop','Мастерская'],['second','Второй корпус'],['other','Другие обозначения']];
+function roomBuilding(room){const r=roomName(room);if(!r)return 'other';if(!r.includes('/'))return 'first';if(r.endsWith('/м'))return 'workshop';if(r.endsWith('/2'))return 'second';return 'other';}
+function buildingRooms(rooms,building){return building==='all'?rooms.slice():rooms.filter(r=>roomBuilding(r)===building);}
+function groupedRooms(rooms,building='all'){return roomBuildings.filter(([id])=>building==='all'||building===id).map(([id,label])=>({id,label,rooms:buildingRooms(rooms,id)})).filter(g=>g.rooms.length);}
 function model(data,campus,week,day){
  const rooms=new Set(),slots=new Map(),events=[];
  function addSlot(n,start,end){if(!interval(start,end))return;const key=start+'|'+end;let s=slots.get(key);if(!s){s={key,start,end,numbers:[]};slots.set(key,s);}if(Number.isInteger(+n)&&+n>0&&!s.numbers.includes(+n))s.numbers.push(+n);}
@@ -41,7 +45,7 @@ function availability(m,slot){
  for(const e of m.events){if(!e.when)unknown.add(e.room);else if(overlap(when,e.when))busy.add(e.room);}
  return {free:m.rooms.filter(r=>!busy.has(r)&&!unknown.has(r)),busy:m.rooms.filter(r=>busy.has(r)),unknown:m.rooms.filter(r=>!busy.has(r)&&unknown.has(r))};
 }
-if(typeof module==='object'&&module.exports){module.exports={dayOff,model,availability,roomName};return;}
+if(typeof module==='object'&&module.exports){module.exports={dayOff,model,availability,roomName,roomBuilding,buildingRooms,groupedRooms};return;}
 
 const store='spk.favorite-teachers.v1';
 let favorites=[];
@@ -115,19 +119,21 @@ calendarHtml=function(){
   return tag.replace('class="calendar-day ','class="calendar-day spk-day-off ').replace(/aria-label="([^"]*)"/,(_,label)=>'aria-label="'+label+', '+esc(off)+'"').replace(/>$/,' title="'+esc(off)+'">');
  }).replace('<div class="calendar-legend">','<p class="spk-calendar-legend"><span>●</span> Выходные и праздники</p><div class="calendar-legend">');
 };
-let roomCampus='spk',roomDate='',roomSlot='';
+let roomCampus='spk',roomDate='',roomSlot='',roomBuildingFilter='all';
 function drawRooms(){
  const d=SpkPlanner.date(roomDate);
  const week=d&&currentEven(d)?'even':'odd',day=d?(d.getDay()+6)%7:0;
  const m=model(state.data,roomCampus,week,day),off=d&&dayOff(d),meta=state.data?.sources?.[roomCampus];
  if(!m.slots.some(s=>s.key===roomSlot))roomSlot=m.slots[0]?.key||'';
- const slot=m.slots.find(s=>s.key===roomSlot),a=availability(m,slot);
- const tiles=arr=>'<div class="spk-room-grid">'+arr.map(r=>'<span>'+esc(r)+'</span>').join('')+'</div>';
- const result=!d?'<p class="planner-note">Выберите корректную дату.</p>':off?'<div class="spk-day-off-label"><span class="spk-off-dot" aria-hidden="true"></span><strong>'+esc(off==='Воскресенье'?'Выходной день':off)+'</strong><small>Доступность кабинетов не определена</small></div>':!slot?'<p class="planner-note">На дату нет известных интервалов пар. Свободные кабинеты определить нельзя.</p>':!m.rooms.length?'<p class="planner-note">В выбранном источнике нет известных кабинетов.</p>':
+ const slot=m.slots.find(s=>s.key===roomSlot),all=availability(m,slot);
+ const a=Object.fromEntries(Object.entries(all).map(([key,rooms])=>[key,buildingRooms(rooms,roomBuildingFilter)]));
+ const tiles=arr=>groupedRooms(arr,roomBuildingFilter).map(g=>'<section class="spk-room-building"><div class="spk-room-building-title"><strong>'+esc(g.label)+'</strong><span>'+g.rooms.length+'</span></div><div class="spk-room-grid">'+g.rooms.map(r=>'<span>'+esc(r)+'</span>').join('')+'</div></section>').join('');
+ const buildingSelect='<label class="spk-room-time">Корпус<select id="spkRoomBuilding">'+[['all','Все корпуса'],...roomBuildings].map(([id,label])=>'<option value="'+id+'" '+(roomBuildingFilter===id?'selected':'')+'>'+esc(label)+'</option>').join('')+'</select></label>';
+ const result=!d?'<p class="planner-note">Выберите корректную дату.</p>':off?'<div class="spk-day-off-label"><span class="spk-off-dot" aria-hidden="true"></span><strong>'+esc(off==='Воскресенье'?'Выходной день':off)+'</strong><small>Доступность кабинетов не определена</small></div>':!slot?'<p class="planner-note">На дату нет известных интервалов пар. Свободные кабинеты определить нельзя.</p>':!m.rooms.length?'<p class="planner-note">В выбранном источнике нет известных кабинетов.</p>':!buildingRooms(m.rooms,roomBuildingFilter).length?'<p class="planner-note">В выбранном корпусе нет кабинетов в расписании.</p>':
  '<div class="spk-room-summary"><strong>'+a.free.length+'</strong><span>Без занятий по таблице</span></div>'+(a.free.length?tiles(a.free):'<p class="planner-note">Свободных по таблице кабинетов не найдено.</p>')+'<details class="spk-room-details"><summary>Занятые по таблице · '+a.busy.length+'</summary>'+tiles(a.busy)+'</details>'+(a.unknown.length?'<details class="spk-room-details"><summary>Неопределённое время · '+a.unknown.length+'</summary>'+tiles(a.unknown)+'</details>':'');
- $('plannerContent').innerHTML='<div class="spk-room-filters"><label>Источник<select id="spkRoomCampus"><option value="spk" '+(roomCampus==='spk'?'selected':'')+'>СПК</option><option value="crk" '+(roomCampus==='crk'?'selected':'')+'>ЦРК</option></select></label><label>Дата<input type="date" id="spkRoomDate" value="'+esc(roomDate)+'"></label><label class="spk-room-time">Время пары<select id="spkRoomSlot" '+(!m.slots.length?'disabled':'')+'>'+m.slots.map(s=>'<option value="'+esc(s.key)+'" '+(s.key===roomSlot?'selected':'')+'>'+esc(s.numbers.sort((x,y)=>x-y).join('/')+' пара · '+s.start+'–'+s.end)+'</option>').join('')+'</select></label></div><p class="planner-note">'+(week==='even'?'Чётная':'Нечётная')+' неделя · все группы и подгруппы</p>'+result+'<p class="planner-note">Только кабинеты, встречавшиеся в текущем расписании. Дополнительные брони, замены и помещения вне таблицы не учитываются. '+(meta?.error?'Источник недоступен, используется сохранённая копия. ':!meta?'Нет подтверждения актуальности источника. ':'')+(meta?.fetchedAt?'Таблица: '+esc(timestamp(meta.fetchedAt))+'.':'')+'</p>';
+ $('plannerContent').innerHTML='<div class="spk-room-filters"><label>Источник<select id="spkRoomCampus"><option value="spk" '+(roomCampus==='spk'?'selected':'')+'>СПК</option><option value="crk" '+(roomCampus==='crk'?'selected':'')+'>ЦРК</option></select></label><label>Дата<input type="date" id="spkRoomDate" value="'+esc(roomDate)+'"></label><label class="spk-room-time">Время пары<select id="spkRoomSlot" '+(!m.slots.length?'disabled':'')+'>'+m.slots.map(s=>'<option value="'+esc(s.key)+'" '+(s.key===roomSlot?'selected':'')+'>'+esc(s.numbers.sort((x,y)=>x-y).join('/')+' пара · '+s.start+'–'+s.end)+'</option>').join('')+'</select></label>'+buildingSelect+'</div><p class="planner-note">'+(week==='even'?'Чётная':'Нечётная')+' неделя · все группы и подгруппы</p>'+result+'<p class="planner-note">Только кабинеты, встречавшиеся в текущем расписании. Дополнительные брони, замены и помещения вне таблицы не учитываются. '+(meta?.error?'Источник недоступен, используется сохранённая копия. ':!meta?'Нет подтверждения актуальности источника. ':'')+(meta?.fetchedAt?'Таблица: '+esc(timestamp(meta.fetchedAt))+'.':'')+'</p>';
 }
-function openRooms(){roomCampus=state.campus;roomDate=iso(selectedDate());roomSlot='';showPlanner('Свободные кабинеты','');drawRooms();}
+function openRooms(){roomCampus=state.campus;roomDate=iso(selectedDate());roomSlot='';roomBuildingFilter='all';showPlanner('Свободные кабинеты','');drawRooms();}
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b||b.disabled)return;
  if(b.dataset.spkRooms==='open')openRooms();
@@ -139,6 +145,7 @@ document.addEventListener('change',e=>{
  if(e.target.id==='spkRoomCampus'){roomCampus=e.target.value;roomSlot='';drawRooms();}
  if(e.target.id==='spkRoomDate'){roomDate=e.target.value;roomSlot='';drawRooms();}
  if(e.target.id==='spkRoomSlot'){roomSlot=e.target.value;drawRooms();}
+ if(e.target.id==='spkRoomBuilding'){roomBuildingFilter=e.target.value;drawRooms();}
 });
 if(state.data)render();
 })();

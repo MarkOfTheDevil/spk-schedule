@@ -24,3 +24,6 @@
 .spk-room-grid span{padding:10px 5px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-weight:650;font-size:13px}
 .spk-room-details{border-top:1px solid var(--line);padding:10px 0;font-size:12px}
 :root[data-theme=dark] .spk-room-filters input{color-scheme:dark}
+
+/* Classroom grouping */
+.spk-room-building{margin:12px 0 16px;min-width:0}.spk-room-building-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin:0 0 6px}.spk-room-building-title strong{font-weight:650;color:var(--text)}.spk-room-building-title>span{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}.spk-room-building .spk-room-grid{margin:0}

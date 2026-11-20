@@ -15,3 +15,16 @@ m=a.model(data,'spk','odd',0);r=a.availability(m,m.slots[0]);assert.deepEqual(r.
 m=a.model(data,'crk','even',0);r=a.availability(m,m.slots[0]);assert.deepEqual(r.busy,['101','309/1']);assert.deepEqual(r.free,['307']);
 assert.equal(a.roomName('СЗ/1'),'');assert.equal(a.roomName('ЦРК'),'');assert.equal(a.roomName('309/1'),'309/1');
 console.log('Teacher tools tests passed: overlap, subgroup, parity, separate campuses, unassigned CRK, six-day calendar.');
+assert.equal(a.roomName(' 205 / М '),'205/м');
+assert.equal(a.roomName('205/m'),'205/м');
+assert.equal(a.roomBuilding('205'),'first');
+assert.equal(a.roomBuilding('205/м'),'workshop');
+assert.equal(a.roomBuilding('205/2'),'second');
+assert.equal(a.roomBuilding('205/1'),'other');
+assert.equal(a.roomBuilding('205/3'),'other');
+assert.deepEqual(a.groupedRooms(['101','101/м','101/2','101/1']).map(g=>g.rooms),[['101'],['101/м'],['101/2'],['101/1']]);
+assert.deepEqual(a.buildingRooms(['101','101/м','101/2'],'second'),['101/2']);
+const buildingsData={groups:[{source:'spk',weeks:{even:{0:[lesson(1,'08:30','10:05','101/М',2),lesson(1,'08:30','10:05','101/2')]},odd:{0:[lesson(1,'08:30','10:05','101/m'),lesson(1,'08:30','10:05','101')]}}}]};
+const bm=a.model(buildingsData,'spk','even',0),br=a.availability(bm,bm.slots[0]);
+assert.deepEqual(br.free,['101']);assert.deepEqual(a.buildingRooms(br.busy,'workshop'),['101/м']);assert.deepEqual(a.buildingRooms(br.busy,'second'),['101/2']);
+assert.equal(bm.rooms.length,3);console.log('Building grouping and normalization tests passed.');
