@@ -10,6 +10,7 @@ on:
       - "pages/teacher-tools.js"
       - "pages/teacher-tools.css"
       - "pages/teacher-tools.test.js"
+      - "pages/collection-themes.py"
   schedule:
     - cron: "37 */2 * * *"
   workflow_dispatch:
@@ -57,6 +58,7 @@ jobs:
           test -f _site/crk-parser.js
           test ! -f _site/_worker.js
           touch _site/.nojekyll
+          python3 pages/collection-themes.py _site
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -172,7 +174,7 @@ jobs:
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
-          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css'))).hexdigest()[:12]
+          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css', 'palettes.js', 'appearance.js', 'web.css'))).hexdigest()[:12]
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
           sw_text=sw_text.replace('modern-type-no-heading-1-', 'teacher-tools-3-1-0-')
           sw.write_text(sw_text,encoding='utf-8')
@@ -182,6 +184,9 @@ jobs:
         shell: bash
         run: |
           node --check _site/teacher-tools.js
+          node --check _site/palettes.js
+          node --check _site/appearance.js
+          node -e "const fs=require('fs'),vm=require('vm'),ctx={window:{},localStorage:{getItem(){return null}}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('_site/palettes.js','utf8')+';globalThis.catalog=PALETTES',ctx);vm.runInContext(fs.readFileSync('_site/appearance.js','utf8'),ctx);const a=ctx.window.SpkAppearance;if(ctx.catalog.length!==48||new Set(ctx.catalog.map(p=>p.id)).size!==48)throw Error('Palette count/IDs');for(const p of ctx.catalog){for(const mode of ['light','dark']){const c=a.normalize({base:p.id,enabled:true});if(c.base!==p.id)throw Error('Missing constructor base '+p.id);const t=a.tokens(c,mode);if(!t.bg||!t.panel||!t.onLime)throw Error('Missing design tokens');}} console.log('48 presets, 96 constructor variants checked')"
           node --check _site/app.js
           node --check _site/sw.js
           node pages/teacher-tools.test.js
