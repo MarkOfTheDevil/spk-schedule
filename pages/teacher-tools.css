@@ -27,3 +27,13 @@
 
 /* Classroom grouping */
 .spk-room-building{margin:12px 0 16px;min-width:0}.spk-room-building-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin:0 0 6px}.spk-room-building-title strong{font-weight:650;color:var(--text)}.spk-room-building-title>span{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}.spk-room-building .spk-room-grid{margin:0}
+
+/* Favorites: consistent compact section actions */
+.spk-fav-groups,.spk-fav-teachers{margin:20px 0 16px;min-width:0}
+.spk-fav-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;min-width:0}
+.spk-fav-section-head h2,.spk-fav-teachers .spk-fav-section-head h2{margin:0;min-width:0;font-size:17px;font-weight:700;letter-spacing:-.02em}
+.spk-fav-add{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-height:40px;padding:0 9px;background:transparent;border:0;border-radius:9px;color:var(--text);font:inherit;font-size:12px;font-weight:650;letter-spacing:0;white-space:nowrap;cursor:pointer}
+.spk-fav-add>span:first-child{font-size:22px;font-weight:400;line-height:1;color:var(--green)}
+.spk-fav-add:active{background:var(--panel2,var(--panel))}.spk-fav-add:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.spk-fav-empty{font-size:13px;line-height:1.5;color:var(--muted);margin:0;padding:14px 12px;border:1px dashed var(--line);border-radius:12px}
+@media(max-width:340px){.spk-fav-section-head h2,.spk-fav-teachers .spk-fav-section-head h2{font-size:15px}.spk-fav-add{padding:0 5px;font-size:11px}}

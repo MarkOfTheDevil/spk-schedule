@@ -90,14 +90,21 @@ renderSmartSearch=function(){
 };
 const oldFav=renderFavorites;
 renderFavorites=function(){
- let html=oldFav().replace('Группы, которые вам нужны чаще всего.','Группы и преподаватели, которые вам нужны чаще всего.');
- html+='<section class="spk-fav-teachers"><h2>Преподаватели</h2>';
- if(!favorites.length)html+='<p class="planner-note">Нажмите звёздочку рядом с преподавателем, чтобы сохранить его расписание.</p>';
+ const add=(title,attr)=>'<button type="button" class="spk-fav-add" '+attr+' aria-label="'+esc(title)+'"><span aria-hidden="true">+</span><span>Добавить</span></button>';
+ const heading=(title,action)=>'<div class="spk-fav-section-head"><h2>'+esc(title)+'</h2>'+action+'</div>';
+ const groupAction=add('Добавить группу','data-action="choose"');
+ const teacherAction=add('Добавить преподавателя','data-spk-find-teacher="1"');
+ const groupButton='<button class="button-primary" data-action="choose">'+icon('search')+' Найти группу</button>';
+ let html=oldFav().replace('Группы, которые вам нужны чаще всего.','Группы и преподаватели, которые вам нужны чаще всего.').replace(groupButton,'');
+ html=html.replace('</p></div>','</p></div><section class="spk-fav-groups">'+heading('Группы',groupAction));
+ html=html.replace('<div class="empty"><div class="empty-icon">'+icon('star')+'</div><h3>Сохраните свою группу</h3><p>Нажмите на звёздочку рядом с названием. Можно добавить несколько групп.</p></div>','<p class="spk-fav-empty">Пока нет избранных групп</p>');
+ html+='</section><section class="spk-fav-teachers">'+heading('Преподаватели',teacherAction);
+ if(!favorites.length)html+='<p class="spk-fav-empty">Пока нет избранных преподавателей</p>';
  else html+=favorites.slice().sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(t=>{
   const exists=(state.data?.groups||[]).some(g=>(g.source||'spk')===t.campus&&['even','odd'].some(w=>Object.values(g.weeks?.[w]||{}).some(ls=>ls.some(l=>l.variants.some(v=>TeacherIndex.key(v.teacher)===t.id)))));
   return '<div class="fav-card"><button class="fav-open" data-spk-open-teacher="'+esc(favoriteKey(t.campus,t.id))+'" '+(exists?'':'disabled')+'><strong>'+esc(t.name)+'</strong><small>'+(t.campus==='crk'?'ЦРК':'СПК')+' · '+(exists?'Открыть расписание':'Нет в текущей таблице')+'</small></button>'+star(t.campus,t.id,t.name)+'</div>';
  }).join('');
- return html+'<button class="button-primary" data-spk-find-teacher="1">'+icon('search')+' Найти преподавателя</button></section>';
+ return html+'</section>';
 };
 const oldControls=renderDayControls;
 renderDayControls=function(){
