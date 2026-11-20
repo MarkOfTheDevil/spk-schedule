@@ -12,6 +12,8 @@ on:
       - "pages/teacher-tools.css"
       - "pages/teacher-tools.test.js"
       - "pages/collection-themes.py"
+      - "pages/release-notes.js"
+      - "pages/release-notes.css"
   schedule:
     - cron: "37 */2 * * *"
   workflow_dispatch:
@@ -50,7 +52,7 @@ jobs:
           unzip -q "$ARCHIVE" -d _site
           # Latest responsive UI fixes live separately from the original, archived ZIP.
           cp pages/ui-polish.css _site/ui-polish.css
-          cp pages/teacher-tools.js pages/teacher-tools.css _site/
+          cp pages/teacher-tools.js pages/teacher-tools.css pages/release-notes.js pages/release-notes.css _site/
           test -f _site/index.html
           test -f _site/manifest.webmanifest
           test -f _site/sw.js
@@ -134,8 +136,8 @@ jobs:
               script = '<script src="app.js" defer></script>'
               style = '<link rel="stylesheet" href="web.css">'
               assert doc.count(script) == 1 and doc.count(style) == 1
-              doc = doc.replace(script, script + chr(10) + '  <script src="teacher-tools.js" defer></script>', 1)
-              doc = doc.replace(style, style + chr(10) + '  <link rel="stylesheet" href="teacher-tools.css">', 1)
+              doc = doc.replace(script, script + chr(10) + '  <script src="teacher-tools.js" defer></script>' + chr(10) + '  <script src="release-notes.js" defer></script>', 1)
+              doc = doc.replace(style, style + chr(10) + '  <link rel="stylesheet" href="teacher-tools.css">' + chr(10) + '  <link rel="stylesheet" href="release-notes.css">', 1)
               # Inline SVG inherits the active palette, including custom design tokens.
               from xml.etree import ElementTree
               logo = Path('pages/spk-brand.svg').read_text(encoding='utf-8').strip()
@@ -180,9 +182,9 @@ jobs:
           # A fixed notification tag caused fresh test pushes to replace older ones silently.
           assert "tag:'spk-reminder'," in sw_text
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
-          sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css',",1)
+          sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css','release-notes.js','release-notes.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
-          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css', 'palettes.js', 'appearance.js', 'web.css'))).hexdigest()[:12]
+          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css', 'palettes.js', 'appearance.js', 'web.css', 'release-notes.js', 'release-notes.css'))).hexdigest()[:12]
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
           sw_text=sw_text.replace('modern-type-no-heading-1-', 'teacher-tools-3-1-0-')
           sw.write_text(sw_text,encoding='utf-8')
@@ -192,6 +194,7 @@ jobs:
         shell: bash
         run: |
           node --check _site/teacher-tools.js
+          node --check _site/release-notes.js
           node --check _site/palettes.js
           node --check _site/appearance.js
           node -e "const fs=require('fs'),vm=require('vm'),ctx={window:{},localStorage:{getItem(){return null}}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('_site/palettes.js','utf8')+';globalThis.catalog=PALETTES',ctx);vm.runInContext(fs.readFileSync('_site/appearance.js','utf8'),ctx);const a=ctx.window.SpkAppearance;if(ctx.catalog.length!==48||new Set(ctx.catalog.map(p=>p.id)).size!==48)throw Error('Palette count/IDs');for(const p of ctx.catalog){for(const mode of ['light','dark']){const c=a.normalize({base:p.id,enabled:true});if(c.base!==p.id)throw Error('Missing constructor base '+p.id);const t=a.tokens(c,mode);if(!t.bg||!t.panel||!t.onLime)throw Error('Missing design tokens');}} console.log('48 presets, 96 constructor variants checked')"
