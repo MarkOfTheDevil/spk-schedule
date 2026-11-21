@@ -112,15 +112,15 @@ jobs:
           web_source = patch_once(web_source,
               "PwaPush.init().then(enabled=>{state.reminder.enabled=enabled;persist(false);const note=document.querySelector('.pwa-notification-status');if(note)note.textContent=PwaPush.status();}).catch(()=>{});",
               """PwaPush.init().then(async enabled=>{
-  state.reminder.enabled=enabled;
-  persist(false);
-  if(enabled){
-   try{await PwaPush.updateIfEnabled({...state.reminder,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0},state.anchorDate,state.anchorEven);}
-   catch(e){state.reminderMessage='Не удалось синхронизировать Push: '+e.message;}
-  }
-  if(state.page==='settings')render();
-  const note=document.querySelector('.pwa-notification-status');if(note)note.textContent=PwaPush.status();
- }).catch(e=>{state.reminderMessage='Ошибка проверки Push: '+e.message;if(state.page==='settings')render();});""",
+            state.reminder.enabled=enabled;
+            persist(false);
+            if(enabled){
+             try{await PwaPush.updateIfEnabled({...state.reminder,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0},state.anchorDate,state.anchorEven);}
+             catch(e){state.reminderMessage='Не удалось синхронизировать Push: '+e.message;}
+            }
+            if(state.page==='settings')render();
+            const note=document.querySelector('.pwa-notification-status');if(note)note.textContent=PwaPush.status();
+           }).catch(e=>{state.reminderMessage='Ошибка проверки Push: '+e.message;if(state.page==='settings')render();});""",
               'reconnect push at app startup')
           web.write_text(web_source, encoding='utf-8')
           app = Path('_site/app.js')
@@ -128,12 +128,12 @@ jobs:
           app_source = patch_once(app_source,
               "else if(b.dataset.action==='reminder-test')PwaPush.test().then(()=>toast('Проверочное уведомление отправлено')).catch(e=>toast(e.message,5200));",
               """else if(b.dataset.action==='reminder-repair'){
-   if(!state.reminder.group){toast('Сначала выберите группу для уведомлений.');}
-   else PwaPush.toggle({enabled:true,group:state.reminder.group,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0,hour:state.reminder.hour,minute:state.reminder.minute,anchorDate:state.anchorDate,anchorEven:state.anchorEven})
-    .then(()=>{state.reminder.enabled=true;state.reminderMessage='Подписка Push обновлена. Для проверки нажмите «Тест Push».';persist(false);render();toast(state.reminderMessage);})
-    .catch(e=>{state.reminderMessage='Не удалось восстановить Push: '+e.message;render();toast(state.reminderMessage,5200);});
-  }
-  else if(b.dataset.action==='reminder-test')PwaPush.test().then(result=>toast(result.note||'Тест принят службой Push. Проверьте уведомления устройства.',5200)).catch(e=>toast(e.message,5200));""",
+             if(!state.reminder.group){toast('Сначала выберите группу для уведомлений.');}
+             else PwaPush.toggle({enabled:true,group:state.reminder.group,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0,hour:state.reminder.hour,minute:state.reminder.minute,anchorDate:state.anchorDate,anchorEven:state.anchorEven})
+              .then(()=>{state.reminder.enabled=true;state.reminderMessage='Подписка Push обновлена. Для проверки нажмите «Тест Push».';persist(false);render();toast(state.reminderMessage);})
+              .catch(e=>{state.reminderMessage='Не удалось восстановить Push: '+e.message;render();toast(state.reminderMessage,5200);});
+            }
+            else if(b.dataset.action==='reminder-test')PwaPush.test().then(result=>toast(result.note||'Тест принят службой Push. Проверьте уведомления устройства.',5200)).catch(e=>toast(e.message,5200));""",
               'repair action and truthful push test status')
           app.write_text(app_source,encoding='utf-8')
 
