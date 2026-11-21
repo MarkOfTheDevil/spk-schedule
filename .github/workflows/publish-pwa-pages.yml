@@ -89,6 +89,54 @@ jobs:
           client=client.replace(" const b64=s=>", " "+owner+"const b64=s=>")
           client=client.replace("body:payload?JSON.stringify(payload):undefined", "body:payload?JSON.stringify({...payload,ownerToken:getOwnerToken()}):undefined")
           push.write_text(client,encoding='utf-8')
+          # Reconnect existing subscriptions after an update and expose a manual repair action.
+          # The server and its VAPID keys are unchanged.
+          def patch_once(source, old, new, label):
+              assert source.count(old) == 1, label + ': integration anchor changed'
+              return source.replace(old, new, 1)
+          client = patch_once(client,
+              "catch(e){reason=e.message;return false;}",
+              "catch(e){reason=e.message;try{const r=await navigator.serviceWorker.ready;return Notification.permission==='granted'&&!!(await r.pushManager.getSubscription());}catch(_){return false;}}",
+              'preserve subscription while push server is temporarily unavailable')
+          client = patch_once(client,
+              "if(!sub)return;\n  await api('subscribe'",
+              "if(!sub)throw Error('Подписка Push потеряна. В настройках нажмите «Переподключить Push».');\n  await api('subscribe'",
+              'subscription loss feedback')
+          client = patch_once(client,
+              '<button class="text-button" data-action="reminder-test"',
+              '<button class="text-button" data-action="reminder-repair">Переподключить Push</button><button class="text-button" data-action="reminder-test"',
+              'push recovery button')
+          push.write_text(client, encoding='utf-8')
+          web = Path('_site/web.js')
+          web_source = web.read_text(encoding='utf-8')
+          web_source = patch_once(web_source,
+              "PwaPush.init().then(enabled=>{state.reminder.enabled=enabled;persist(false);const note=document.querySelector('.pwa-notification-status');if(note)note.textContent=PwaPush.status();}).catch(()=>{});",
+              """PwaPush.init().then(async enabled=>{
+  state.reminder.enabled=enabled;
+  persist(false);
+  if(enabled){
+   try{await PwaPush.updateIfEnabled({...state.reminder,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0},state.anchorDate,state.anchorEven);}
+   catch(e){state.reminderMessage='Не удалось синхронизировать Push: '+e.message;}
+  }
+  if(state.page==='settings')render();
+  const note=document.querySelector('.pwa-notification-status');if(note)note.textContent=PwaPush.status();
+ }).catch(e=>{state.reminderMessage='Ошибка проверки Push: '+e.message;if(state.page==='settings')render();});""",
+              'reconnect push at app startup')
+          web.write_text(web_source, encoding='utf-8')
+          app = Path('_site/app.js')
+          app_source = app.read_text(encoding='utf-8')
+          app_source = patch_once(app_source,
+              "else if(b.dataset.action==='reminder-test')PwaPush.test().then(()=>toast('Проверочное уведомление отправлено')).catch(e=>toast(e.message,5200));",
+              """else if(b.dataset.action==='reminder-repair'){
+   if(!state.reminder.group){toast('Сначала выберите группу для уведомлений.');}
+   else PwaPush.toggle({enabled:true,group:state.reminder.group,subgroup:state.subgroupsEnabled?state.reminder.subgroup:0,hour:state.reminder.hour,minute:state.reminder.minute,anchorDate:state.anchorDate,anchorEven:state.anchorEven})
+    .then(()=>{state.reminder.enabled=true;state.reminderMessage='Подписка Push обновлена. Для проверки нажмите «Тест Push».';persist(false);render();toast(state.reminderMessage);})
+    .catch(e=>{state.reminderMessage='Не удалось восстановить Push: '+e.message;render();toast(state.reminderMessage,5200);});
+  }
+  else if(b.dataset.action==='reminder-test')PwaPush.test().then(result=>toast(result.note||'Тест принят службой Push. Проверьте уведомления устройства.',5200)).catch(e=>toast(e.message,5200));""",
+              'repair action and truthful push test status')
+          app.write_text(app_source,encoding='utf-8')
+
           html=Path('_site/index.html')
           text=html.read_text(encoding='utf-8')
           assert "connect-src 'self'" in text
@@ -148,7 +196,7 @@ jobs:
               page.write_text(doc, encoding='utf-8')
           for filename in ('app.js','updates.js'):
               p = Path('_site') / filename
-              p.write_text(p.read_text(encoding='utf-8').replace('3.0.0','3.1.0'), encoding='utf-8')
+              p.write_text(p.read_text(encoding='utf-8').replace('3.0.0','3.1.1'), encoding='utf-8')
           # Cloudflare Web Analytics works on external hosts using the manual beacon.
           # Token is a PUBLIC site identifier, provided via GitHub Actions repository variable.
           import os, re, hashlib
@@ -184,7 +232,7 @@ jobs:
           sw_text=sw_text.replace("tag:'spk-reminder',", "tag:'spk-reminder-'+Date.now(),",1)
           sw_text=sw_text.replace('const FILES=[', "const FILES=['ui-polish.css','teacher-tools.js','teacher-tools.css','release-notes.js','release-notes.css',",1)
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0','spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1')
-          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css', 'palettes.js', 'appearance.js', 'web.css', 'release-notes.js', 'release-notes.css'))).hexdigest()[:12]
+          asset_fingerprint = hashlib.sha256(b''.join(Path('_site', name).read_bytes() for name in ('index.html', 'teacher-tools.js', 'teacher-tools.css', 'ui-polish.css', 'palettes.js', 'appearance.js', 'web.css', 'release-notes.js', 'release-notes.css', 'web-push.js', 'web.js', 'app.js'))).hexdigest()[:12]
           sw_text=sw_text.replace('spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1', 'spk-iphone-v3-github-pages-3-0-0-modern-type-no-heading-1-' + asset_fingerprint)
           sw_text=sw_text.replace('modern-type-no-heading-1-', 'teacher-tools-3-1-0-')
           sw.write_text(sw_text,encoding='utf-8')
@@ -195,6 +243,9 @@ jobs:
         run: |
           node --check _site/teacher-tools.js
           node --check _site/release-notes.js
+          node --check _site/web-push.js
+          node --check _site/web.js
+          node -e "const fs=require('fs');const p=fs.readFileSync('_site/web-push.js','utf8'),a=fs.readFileSync('_site/app.js','utf8'),w=fs.readFileSync('_site/web.js','utf8');if(!p.includes('reminder-repair')||!p.includes('sibbvczmioxnoffnfdlj')||!a.includes('Подписка Push обновлена')||!w.includes('Не удалось синхронизировать Push'))throw Error('Push recovery integration missing');console.log('PWA Push recovery integration verified')"
           node --check _site/palettes.js
           node --check _site/appearance.js
           node -e "const fs=require('fs'),vm=require('vm'),ctx={window:{},localStorage:{getItem(){return null}}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('_site/palettes.js','utf8')+';globalThis.catalog=PALETTES',ctx);vm.runInContext(fs.readFileSync('_site/appearance.js','utf8'),ctx);const a=ctx.window.SpkAppearance;if(ctx.catalog.length!==48||new Set(ctx.catalog.map(p=>p.id)).size!==48)throw Error('Palette count/IDs');for(const p of ctx.catalog){for(const mode of ['light','dark']){const c=a.normalize({base:p.id,enabled:true});if(c.base!==p.id)throw Error('Missing constructor base '+p.id);const t=a.tokens(c,mode);if(!t.bg||!t.panel||!t.onLime)throw Error('Missing design tokens');}} console.log('48 presets, 96 constructor variants checked')"
