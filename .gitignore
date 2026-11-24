@@ -4,3 +4,6 @@ __pycache__/
 *.keystore
 signing/
 .env
+_site/
+node_modules/
+test-results/

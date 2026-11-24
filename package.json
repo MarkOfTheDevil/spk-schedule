@@ -1,0 +1,10 @@
+{
+  "name": "spk-pulse-preview",
+  "private": true,
+  "version": "2.0.0-dev",
+  "scripts": {
+    "test": "node --test tests/pulse-profile.test.js && node pages/teacher-tools.test.js && node tests/pulse-build.cjs",
+    "test:browser": "node tests/pulse-browser.cjs"
+  },
+  "devDependencies": {"playwright": "1.62.1"}
+}
