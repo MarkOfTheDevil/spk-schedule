@@ -135,6 +135,16 @@ jobs:
               'repair action and truthful push test status')
           app.write_text(app_source,encoding='utf-8')
 
+          # Do not claim that the timetable itself changed when only the Excel file was checked.
+          status_file = Path('_site/source-status.js')
+          status_code = status_file.read_text(encoding='utf-8')
+          existing = "return {text:'Расписание обновлено',duration:2400};"
+          replacement = """const modified=sources.spk?.sourceModified||'';
+          const date=/^\\d{4}-\\d{2}-\\d{2}/.test(modified)?modified.slice(0,10).split('-').reverse().join('.'):'';
+          return {text:'Расписание проверено'+(date?' · файл СПК от '+date:''),duration:4200};"""
+          assert status_code.count(existing) == 1, 'schedule update status anchor changed'
+          status_file.write_text(status_code.replace(existing,replacement,1),encoding='utf-8')
+
           html=Path('_site/index.html')
           text=html.read_text(encoding='utf-8')
           assert "connect-src 'self'" in text
@@ -241,6 +251,7 @@ jobs:
         run: |
           node --check _site/teacher-tools.js
           node --check _site/release-notes.js
+          node --check _site/source-status.js
           node --check _site/web-push.js
           node --check _site/web.js
           node -e "const fs=require('fs');const p=fs.readFileSync('_site/web-push.js','utf8'),a=fs.readFileSync('_site/app.js','utf8'),w=fs.readFileSync('_site/web.js','utf8');if(!p.includes('reminder-repair')||!p.includes('sibbvczmioxnoffnfdlj')||!a.includes('Подписка Push обновлена')||!w.includes('Не удалось синхронизировать Push'))throw Error('Push recovery integration missing');console.log('PWA Push recovery integration verified')"
@@ -260,6 +271,11 @@ jobs:
           from pathlib import Path
           import urllib.request
           import zipfile
+          import hashlib
+          import json
+          import datetime
+          import xml.etree.ElementTree as ET
+          provenance = {}
           root = Path("_site/api")
           root.mkdir(parents=True, exist_ok=True)
           base = "https://markofthedevil.github.io/spk-schedule/api/"
@@ -284,13 +300,34 @@ jobs:
                       with zipfile.ZipFile(io.BytesIO(content)) as z:
                           if "xl/workbook.xml" not in z.namelist():
                               raise ValueError("Not an XLSX workbook")
+                          modified = ""
+                          if "docProps/core.xml" in z.namelist():
+                              meta = ET.fromstring(z.read("docProps/core.xml"))
+                              for node in meta.iter():
+                                  if node.tag.endswith("}modified") or node.tag == "modified":
+                                      modified = (node.text or "").strip()
+                                      break
                       (root / output_name).write_bytes(content)
-                      print(f"Fetched {output_name}: {len(content)} bytes")
+                      provenance[output_name] = {
+                          "available": True,
+                          "source": "college" if "spospk.ru/" in url else "github-pages-fallback",
+                          "sourceModified": modified,
+                          "checkedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                          "sizeBytes": len(content),
+                          "sha256": hashlib.sha256(content).hexdigest()
+                      }
+                      print(f"Fetched {output_name}: {len(content)} bytes from {url}, workbook modified {modified}, SHA256 {provenance[output_name]['sha256']}")
+
                       break
                   except Exception as exc:
                       print(f"WARNING: {url}: {exc}")
               else:
+                  provenance[output_name] = {"available": False, "source": "bundled-json-only"}
                   print(f"WARNING: {output_name} could not be refreshed; PWA includes cached JSON")
+          (root / "source-status.json").write_text(
+              json.dumps({"schemaVersion": 1, "sources": provenance}, ensure_ascii=False, indent=2) + "\\n",
+              encoding="utf-8"
+          )
           PY
 
       - name: Configure GitHub Pages
