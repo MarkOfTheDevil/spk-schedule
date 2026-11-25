@@ -29,11 +29,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -304,8 +301,19 @@ jobs:
         with:
           path: _site
 
-      # GitHub Actions can finish uploading a Pages artifact before its metadata
-      # is visible to actions/deploy-pages. Wait for the same-run artifact via API.
+  # A separate job avoids the artifact upload/lookup race and can be re-run alone.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+    steps:
       - name: Wait for uploaded Pages artifact to become visible
         shell: bash
         env:
@@ -316,15 +324,27 @@ jobs:
             artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \
               --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' 2>/dev/null || true)"
             if [ -n "$artifact_id" ]; then
-              echo "GitHub Pages artifact visible: $artifact_id (attempt $attempt)"
+              echo "GitHub Pages artifact visible: $artifact_id"
+              # Give the artifact service time to expose metadata to deploy-pages too.
+              sleep 10
               exit 0
             fi
-            echo "Waiting for GitHub Pages artifact metadata (attempt $attempt/18)"
+            echo "Waiting for GitHub Pages artifact metadata ($attempt/18)"
             sleep 5
           done
-          echo "::error title=Pages artifact not visible::Upload finished but GitHub API did not expose github-pages within 90 seconds."
+          echo "::error title=Pages artifact not visible::Upload succeeded but the GitHub API did not expose github-pages within 90 seconds."
           exit 1
 
       - name: Publish GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Pause before retrying unsuccessful deployment
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 20
+
+      - name: Retry GitHub Pages deployment
+        if: steps.deployment.outcome == 'failure'
+        id: deployment_retry
         uses: actions/deploy-pages@v4
