@@ -1,0 +1,107 @@
+name: Diagnose current SPK timetable (read-only)
+
+on:
+  push:
+    paths:
+      - ".github/workflows/diagnose-timetable.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download original college workbook
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import io, urllib.request, zipfile, hashlib
+          for url in ['https://www.spospk.ru/rasp.xlsx','http://www.spospk.ru/rasp.xlsx']:
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (SPK Schedule diagnostics)'})
+                  with urllib.request.urlopen(req,timeout=25) as r:
+                      content=r.read(8*1024*1024+1)
+                  if not 22<=len(content)<=8*1024*1024:raise ValueError('Invalid size')
+                  with zipfile.ZipFile(io.BytesIO(content)) as z:
+                      if 'xl/workbook.xml' not in z.namelist():raise ValueError('Invalid workbook')
+                  open('schedule.xlsx','wb').write(content)
+                  print('COLLEGE SOURCE:',url,'SHA256:',hashlib.sha256(content).hexdigest())
+                  break
+              except Exception as e:
+                  print('Unavailable:',url,str(e))
+          else:raise RuntimeError('Original source unavailable; cannot establish current schedule')
+          PY
+
+      - name: Install workbook reader
+        run: python3 -m pip install --disable-pip-version-check openpyxl==3.1.5
+
+      - name: Print D193/1 timetable straight from college Excel
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import openpyxl, json, re
+          from zipfile import ZipFile
+          from xml.etree import ElementTree as ET
+          with ZipFile('schedule.xlsx') as z:
+              if 'docProps/core.xml' in z.namelist():
+                  core=ET.fromstring(z.read('docProps/core.xml'))
+                  modified=next((n.text for n in core.iter() if n.tag.endswith('}modified') or n.tag=='modified'),'')
+                  print('WORKBOOK LAST MODIFIED:',modified)
+          w=openpyxl.load_workbook('schedule.xlsx',data_only=True)
+          DAYS=['ПОНЕДЕЛЬНИК','ВТОРНИК','СРЕДА','ЧЕТВЕРГ','ПЯТНИЦА','СУББОТА']
+          for sheet in w.worksheets:
+              headers=[r for r in range(1,sheet.max_row+1)
+                  if str(sheet.cell(r,4).value or '').strip().upper()=='ГРУППА:']
+              if len(headers)!=2:continue
+              ranges=list(sheet.merged_cells.ranges)
+              column=next((m.min_col for m in ranges if m.min_row==headers[0] and m.max_row==headers[0]
+                  and m.max_col-m.min_col==3 and str(sheet.cell(headers[0],m.min_col).value or '').strip()=='Д193/1'),None)
+              if column is None:continue
+              def get(row,col):
+                  cell=sheet.cell(row,col)
+                  if cell.value is not None:return str(cell.value).strip(),(row,col)
+                  for m in ranges:
+                      if m.min_row<=row<=m.max_row and m.min_col<=col<=m.max_col:
+                          anchor=sheet.cell(m.min_row,m.min_col)
+                          return str(anchor.value or '').strip(),(m.min_row,m.min_col)
+                  return '',(row,col)
+              result={'group':'Д193/1','sheet':sheet.title,'weeks':{}}
+              for block,header in enumerate(headers):
+                  lower=headers[block-1] if block else 0
+                  parity=''
+                  for row in range(header,lower,-1):
+                      for col in range(1,21):
+                          s=get(row,col)[0].upper().replace('Ё','Е')
+                          if 'НЕЧЕТНАЯ НЕДЕЛЯ' in s:parity='odd';break
+                          if 'ЧЕТНАЯ НЕДЕЛЯ' in s:parity='even';break
+                      if parity:break
+                  if not parity:parity='unknown'+str(block)
+                  end=headers[block+1] if block==0 else sheet.max_row+1
+                  lessons=[];day=-1
+                  for row in range(header+1,end):
+                      daycell=str(sheet.cell(row,1).value or '').strip().upper()
+                      if daycell in DAYS:day=DAYS.index(daycell)
+                      num=str(sheet.cell(row,2).value or '').strip()
+                      if day!=2 or not re.fullmatch('[1-9]',num):continue
+                      variants=[];prev=None
+                      for subgroup in (1,2):
+                          col=column+(subgroup-1)*2
+                          subject,anchor=get(row,col)
+                          if not subject:continue
+                          if anchor==prev:
+                              variants[-1]['subgroup']=0
+                              continue
+                          room,room_anchor=get(row,col+1)
+                          if room_anchor==anchor:room=get(row,column+3)[0]
+                          variants.append({'subject':subject,'room':room,'subgroup':subgroup})
+                          prev=anchor
+                      if variants:lessons.append({'number':int(num),'time':get(row,4)[0],'variants':variants})
+                  result['weeks'][parity]=lessons
+              print('OFFICIAL D193/1 WEDNESDAY:',json.dumps(result,ensure_ascii=False))
+              break
+          else:
+              raise RuntimeError('Group Д193/1 not found in current original workbook')
+          PY
