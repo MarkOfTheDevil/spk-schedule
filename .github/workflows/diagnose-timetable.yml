@@ -13,6 +13,9 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download original college workbook
         shell: bash
         run: |
@@ -105,3 +108,22 @@ jobs:
           else:
               raise RuntimeError('Group Д193/1 not found in current original workbook')
           PY
+
+      - name: Check PWA parser against the same original Excel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pwa
+          unzip -q SPK-iPhone-PWA-GitHub-Pages-3.0.0.zip -d pwa
+          npm install --no-save --no-package-lock --no-audit --no-fund jsdom@26.1.0
+          node - <<'JS'
+          const fs=require('fs');
+          const {JSDOM}=require('jsdom');
+          global.DOMParser=new JSDOM('').window.DOMParser;
+          const parser=require('./pwa/parser.js');
+          const data=parser.parse(new Uint8Array(fs.readFileSync('schedule.xlsx')),Date.now());
+          const g=data.groups.find(g=>g.id==='Д193/1');
+          if(!g)throw Error('PWA parser: missing Д193/1');
+          const days={odd:g.weeks.odd['2'],even:g.weeks.even['2']};
+          console.log('PWA PARSER D193/1 WEDNESDAY:',JSON.stringify({sourceModified:data.sourceModified,days}));
+          JS
