@@ -313,7 +313,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in {1..18}; do
-            artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \\
+            artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \
               --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' 2>/dev/null || true)"
             if [ -n "$artifact_id" ]; then
               echo "GitHub Pages artifact visible: $artifact_id (attempt $attempt)"
