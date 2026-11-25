@@ -8,6 +8,31 @@ for(const icon of manifest.icons) assert.ok(fs.existsSync('_site/'+icon.src));
 const sw=read('sw.js');
 const files=vm.runInNewContext(sw.match(/const FILES=(\[[^;]+\]);/)[1]);
 for(const file of files) assert.ok(fs.existsSync('_site/'+(file==='./'?'index.html':file)),'Missing offline asset '+file);
+const handlers={}, notifications=[];
+const scope='https://example.test/spk-schedule/';
+vm.runInNewContext(sw, {URL,URLSearchParams,self:{
+  registration:{scope,showNotification(title, options){notifications.push({title,...options});return Promise.resolve();}},
+  addEventListener(name,handler){handlers[name]=handler;}
+}});
+function push(payload) {
+  handlers.push({data:{json:()=>payload},waitUntil(){}});
+  return notifications.at(-1);
+}
+const reminder=push({title:'Расписание СПК',body:'Первая пара в 08:30',group:'crk:Д015П',date:'2026-11-26'});
+assert.equal(reminder.title,'Pulse · Расписание');
+assert.equal(reminder.body,'Первая пара в 08:30');
+assert.equal(reminder.badge,'icons/pulse-notification.png');
+assert.ok(files.includes(reminder.badge));
+const link=new URL(reminder.data.url);
+assert.equal(link.origin,'https://example.test');
+assert.equal(link.pathname,'/spk-schedule/');
+assert.equal(link.searchParams.get('group'),'crk:Д015П');
+assert.equal(link.searchParams.get('date'),'2026-11-26');
+assert.equal(push({title:'Pulse · Тест Push'}).title,'Pulse · Тест Push');
+assert.equal(push({title:'Перенос занятия'}).title,'Pulse · Перенос занятия');
+assert.equal(push(null).title,'Pulse · Расписание');
+handlers.push({data:{json(){throw Error('plain text');},text:()=> 'Расписание на завтра'},waitUntil(){}});
+assert.equal(notifications.at(-1).body,'Расписание на завтра');
 for(const name of ['index.html','404.html']) {
   const html=read(name);
   for(const match of html.matchAll(/(?:src|href)="([^"#]+\.(?:js|css|svg|png))"/g)) assert.ok(fs.existsSync('_site/'+match[1]),'Missing page asset '+match[1]);

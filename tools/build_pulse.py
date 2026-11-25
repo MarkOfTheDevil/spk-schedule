@@ -46,7 +46,16 @@ def build():
     for source in (ROOT / 'pulse/icons').glob('*'):
         shutil.copyfile(source, site / 'icons' / source.name)
     sw = (site / 'sw.js').read_text(encoding='utf-8')
-    sw = sw.replace('const FILES=[', "const FILES=['pulse.css','pulse.js','profile.js','pulse-mark.png','brand.js',", 1)
+    sw = sw.replace('const FILES=[', "const FILES=['pulse.css','pulse.js','profile.js','pulse-mark.png','brand.js','icons/pulse-notification.png',", 1)
+    old_title = " const title=String(data.title||'Расписание СПК').slice(0,100);"
+    old_badge = "badge:'icons/icon-192.png'"
+    assert sw.count(old_title) == 1 and sw.count(old_badge) == 1, 'Push notification integration changed'
+    sw = sw.replace(old_title, """ const heading=typeof data?.title==='string'?data.title.trim().replace(/\\s+/g,' '):'';
+ const detail=heading.replace(/^(?:Pulse\\s*[·:—–-]\\s*)+/i,'');
+ const title=(!detail||/^(Pulse|Расписание(?: СПК)?)$/i.test(detail)
+  ? 'Pulse · Расписание' : 'Pulse · '+detail).slice(0,100);
+ data=data||{};""")
+    sw = sw.replace(old_badge, "badge:'icons/pulse-notification.png'")
     digest = hashlib.sha256(b''.join(p.read_bytes() for p in sorted(site.rglob('*')) if p.is_file() and p.name != 'sw.js')).hexdigest()[:16]
     sw = re.sub(r"const CACHE='[^']+'", "const CACHE='spk-iphone-v3-pulse-2-" + digest + "'", sw)
     (site / 'sw.js').write_text(sw, encoding='utf-8')
