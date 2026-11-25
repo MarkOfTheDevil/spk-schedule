@@ -19,16 +19,16 @@ def build():
         shutil.rmtree(site)
     runpy.run_path(str(ROOT / 'tools/build_stable_pwa.py'))
     for source in (ROOT / 'pulse').iterdir():
-        if source.is_file() and source.suffix in ('.js', '.css', '.svg'):
+        if source.is_file() and source.suffix in ('.js', '.css', '.svg', '.png'):
             shutil.copyfile(source, site / source.name)
     for name in ('index.html', '404.html'):
         path = site / name
         text = path.read_text(encoding='utf-8')
-        text = text.replace('<script src="release-notes.js" defer></script>', '<script src="profile.js" defer></script>\n  <script src="pulse.js" defer></script>')
+        text = text.replace('<script src="release-notes.js" defer></script>', '<script src="profile.js" defer></script>\n  <script src="pulse.js" defer></script>\n  <script src="brand.js" defer></script>')
         text = text.replace('</head>', '  <link rel="stylesheet" href="pulse.css">\n</head>')
         text = re.sub(r'<title>.*?</title>', '<title>Pulse · Расписание</title>', text)
         text = text.replace('name="apple-mobile-web-app-title" content="Расписание СПК"', 'name="apple-mobile-web-app-title" content="Pulse"')
-        text = re.sub(r'<div class="brand-icon spk-brand-logo" aria-hidden="true">.*?</div>', '<div class="brand-icon" aria-hidden="true"><img class="pulse-mark" src="pulse.svg" alt=""></div>', text, count=1, flags=re.S)
+        text = re.sub(r'<div class="brand-icon spk-brand-logo" aria-hidden="true">.*?</div>', '<div class="brand-icon" aria-hidden="true"><img class="pulse-mark" src="pulse-mark.png" alt=""></div>', text, count=1, flags=re.S)
         text = text.replace('Расписание <span>СПК</span>', 'Pulse <span>2.0</span>')
         text = text.replace('<button data-page="schedule" data-campus="spk" class="nav-item active"><span id="navCalendar"></span><span>СПК</span></button>', '<button data-pulse="home" class="nav-item"><span id="navCalendar"></span><span>Мой день</span></button>')
         text = text.replace('<button data-page="schedule" data-campus="crk" class="nav-item"><span id="navCrk"></span><span>ЦРК</span></button>', '<button data-action="choose" class="nav-item"><span id="navCrk"></span><span>Группы</span></button>')
@@ -45,9 +45,8 @@ def build():
             raise FileNotFoundError('Missing Pulse launcher icon: '+name)
     for source in (ROOT / 'pulse/icons').glob('*'):
         shutil.copyfile(source, site / 'icons' / source.name)
-    shutil.copyfile(ROOT / 'pulse/pulse.svg', site / 'icons/icon.svg')
     sw = (site / 'sw.js').read_text(encoding='utf-8')
-    sw = sw.replace('const FILES=[', "const FILES=['pulse.css','pulse.js','profile.js','pulse.svg',", 1)
+    sw = sw.replace('const FILES=[', "const FILES=['pulse.css','pulse.js','profile.js','pulse-mark.png','brand.js',", 1)
     digest = hashlib.sha256(b''.join(p.read_bytes() for p in sorted(site.rglob('*')) if p.is_file() and p.name != 'sw.js')).hexdigest()[:16]
     sw = re.sub(r"const CACHE='[^']+'", "const CACHE='spk-iphone-v3-pulse-2-" + digest + "'", sw)
     (site / 'sw.js').write_text(sw, encoding='utf-8')

@@ -2,7 +2,7 @@
 (function() {
   'use strict';
   let profile = PulseProfile.read(localStorage), draft, step = 0, dialog, returnFocus;
-  const mark = '<img class="pulse-mark" src="pulse.svg" alt="">';
+  const mark = '<img class="pulse-mark" src="pulse-mark.png" alt="">';
   const roleName = p => p.role === 'student' ? 'Студент' : p.curator ? 'Преподаватель · куратор' : 'Преподаватель';
   const groups = campus => (state.data?.groups || []).filter(g => (g.source || 'spk') === campus);
   const choices = () => draft.role === 'student' || step === 3 ? groups(draft.campus) : TeacherIndex.build({groups: groups(draft.campus)});

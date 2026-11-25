@@ -63,6 +63,19 @@ const server = http.createServer((req,res) => {
     await page.locator('summary').filter({hasText:'Оформление'}).click();
     await click('[data-action="appearance-open"]'); await page.locator('#appearanceModal:not([hidden])').waitFor();
     await click('#appDesignCancel'); await settle();
+    const brand = page.locator('.topbar .pulse-mark');
+    const brandReady = () => page.waitForFunction(() => document.querySelector('.topbar .pulse-mark')?.src.startsWith('data:image/png'));
+    await brandReady();
+    const originalBrand = await brand.getAttribute('src');
+    await page.screenshot({path:'test-results/brand-lime.png'});
+    if (!await page.locator('[data-action="palette-choose"]').isVisible()) await page.locator('summary').filter({hasText:'Оформление'}).click();
+    await click('[data-action="palette-choose"]'); await click('[data-palette-choice="ocean"]');
+    await page.waitForFunction(previous => document.querySelector('.topbar .pulse-mark').src !== previous, originalBrand);
+    const oceanBrand = await brand.getAttribute('src');
+    assert.equal(await page.locator('link[rel="icon"]').getAttribute('href'),oceanBrand);
+    if (await page.locator('#paletteModal').isVisible()) await click('#closePalette');
+    await settle();
+    await page.screenshot({path:'test-results/brand-ocean.png'});
     // Editing and canceling must not mutate a saved profile.
     await click('[data-pulse="profile"]'); await click('[data-role="teacher"]'); await click('[data-wizard="close"]');
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('pulse.profile.v2')).role),'student');
@@ -100,6 +113,8 @@ const server = http.createServer((req,res) => {
     await page.evaluate(()=>navigator.serviceWorker.ready);
     await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
     await context.setOffline(true); await page.reload(); await page.locator('.pulse-intro').waitFor();
+    await brandReady();
+    assert.notEqual(await brand.getAttribute('src'),originalBrand);
     assert.equal(await page.locator('.pulse-group-chip').count(),2);
     await context.setOffline(false);
     assert.deepEqual(errors,[]);
