@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -302,6 +303,27 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+
+      # GitHub Actions can finish uploading a Pages artifact before its metadata
+      # is visible to actions/deploy-pages. Wait for the same-run artifact via API.
+      - name: Wait for uploaded Pages artifact to become visible
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \\
+              --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' 2>/dev/null || true)"
+            if [ -n "$artifact_id" ]; then
+              echo "GitHub Pages artifact visible: $artifact_id (attempt $attempt)"
+              exit 0
+            fi
+            echo "Waiting for GitHub Pages artifact metadata (attempt $attempt/18)"
+            sleep 5
+          done
+          echo "::error title=Pages artifact not visible::Upload finished but GitHub API did not expose github-pages within 90 seconds."
+          exit 1
 
       - name: Publish GitHub Pages
         id: deployment
